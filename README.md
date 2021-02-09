@@ -16,19 +16,19 @@ Terminology and Concepts:
   ----
 
 * MVP - 1
- * Screen Draw around Player
- * Room Generation
- * Player Movement + Collision
- * Bomb Placement
- * Bomb explosion
- * Entity destruction by bombs
- * Door Generation
- * Moving between rooms via doors
+  * Screen Draw around Player
+  * Room Generation
+  * Player Movement + Collision
+  * Bomb Placement
+  * Bomb explosion
+  * Entity destruction by bombs
+  * Door Generation
+  * Moving between rooms via doors
 * MVP - 2
- * Powerup placement
- * Powerup consumption and effect activation
- * Basic enemies [Balloom](https://strategywiki.org/wiki/Bomberman/How_to_play#Enemies)
- * Player death and loss of a 'life' (with associated loss of powerups)
- * Game over state
+  * Powerup placement
+  * Powerup consumption and effect activation
+  * Basic enemies [Balloom](https://strategywiki.org/wiki/Bomberman/How_to_play#Enemies)
+  * Player death and loss of a 'life' (with associated loss of powerups)
+  * Game over state
 * MVP - 3
- * Networking and multiplayer features - we can expand on this when we get there.
+  * Networking and multiplayer features - we can expand on this when we get there.
