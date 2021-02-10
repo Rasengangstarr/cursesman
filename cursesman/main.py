@@ -2,7 +2,7 @@ import curses
 from curses import wrapper
 import datetime
 
-from cursesman.sprite_loader import Sprite
+from cursesman.entities import Player
 
 #init curses
 #curses.noecho()
@@ -25,28 +25,50 @@ def drawmap(stdscr):
                         stdscr.addch(y*fidelity+by, x*fidelity+bx, 'X')
 
 
+def init_curses(stdscr):
+
+    # TODO: replace with proper resfresh code
+    curses.halfdelay(3) # 10/10 = 1[s] inteval
+    curses.curs_set(0)
+
+    # Clear and refresh the screen for a blank canvas
+    stdscr.clear()
+    stdscr.refresh()
+
+    # Start colors in curses
+    curses.start_color()
+    curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
+    curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
+    curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
+
+
 def event_loop(stdscr):
     # Clear screen
-    curses.curs_set(0)
-    px = 5
-    py = 5
+    height, width = stdscr.getmaxyx()
+    init_curses(stdscr)
 
-    sprite = Sprite('player')
+    player = Player(0, 0)
     while 1:
         stdscr.refresh()
         stdscr.clear()
         
         drawmap(stdscr)
-        sprite.render(stdscr, px, py)
+        player.render(stdscr)
         inp = stdscr.getch()
+
+        # input logic
+        # TODO: move this to a proper handler class
         if inp in [ord('w'), ord('k')]:
-            py = py - 1
-        if inp in [ord('s'), ord('j')]:
-            py = py + 1
-        if inp in [ord('a'), ord('h')]:
-            px = px - 1
-        if inp in [ord('d'), ord('l')]:
-            px = px + 1
+            player.move(0, -1)
+        elif inp in [ord('s'), ord('j')]:
+            player.move(0, 1)
+        elif inp in [ord('a'), ord('h')]:
+            player.move(-1, 0)
+        elif inp in [ord('d'), ord('l')]:
+            player.move(1, 0)
+        else:
+            # it would be nice to automatically update all non movign entities as idle
+            player.update_state('idle')
 
 def main():
     wrapper(event_loop)

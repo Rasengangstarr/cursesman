@@ -7,9 +7,10 @@ SPRITES_DIR = ROOT_DIR / 'sprites'
 
 
 class Sprite():
-    def __init__(self, path):
+    def __init__(self, entity, state):
         # load the sprite sheet
-        self.sprite_data = [list(l.replace('\n', '')) for l in open(str(SPRITES_DIR / f'{path}.txt')).readlines()
+        path = f'{entity}/{state}.txt'
+        self.sprite_data = [list(l.replace('\n', '')) for l in open(str(SPRITES_DIR / path)).readlines()
                             if l != '']
         self.height = len(self.sprite_data)
         self.width = max([len(l) for l in self.sprite_data])
