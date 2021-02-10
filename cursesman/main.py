@@ -5,10 +5,6 @@ import datetime
 import time
 from entities import Player, DestructibleWall, Bomb
 
-#init curses
-#curses.noecho()
-#stdscr.nodelay(1)
-
 #how many characters to use to represent one 'block' in game
 fidelity = 4
 
@@ -52,9 +48,6 @@ def init_curses(stdscr):
     event_loop(stdscr)
 
 def check_can_move(x, y, walls):
-    # first check permanent walls
-    # TODO: dave 
-    # now check dwalls
     for wall in walls:
         if x > wall.x-4 and x < wall.x+4 and y > wall.y-4 and y < wall.y+4:
             return False
