@@ -3,7 +3,7 @@ import curses
 from curses import wrapper
 import datetime
 import time
-from entities import Player, DestructibleWall, StaticWall, Bomb, Unwalkable
+from cursesman.entities import Destructable, Player, DestructibleWall, StaticWall, Bomb, Unwalkable
 
 #how many characters to use to represent one 'block' in game
 fidelity = 4
@@ -75,7 +75,7 @@ def event_loop(stdscr):
         #deal with bombs
         explodedBombs = [b for b in room if type(b) == Bomb and b.exploded]
         for b in explodedBombs:
-            room = [e for e in room if not (type(e) == DestructibleWall and is_adjacent(b,e))]
+            room = [e for e in room if not (isinstance(e, Destructable) and is_adjacent(b,e))]
        
         currentTime = time.time()
         #do rendering
@@ -86,11 +86,7 @@ def event_loop(stdscr):
             room = [e for e in room if e.alive == True]
             
             stdscr.erase() 
-            
-            #map room to screen
-            roomToDraw=[ for e in room]
 
-            #
             for entity in room:
                 entity.render(stdscr)
             stdscr.refresh()
