@@ -63,7 +63,7 @@ def check_can_move(x, y, walls):
     return True
 
 def is_adjacent(a, b):
-    return abs(a.x/4 - b.x/4 + a.y/4 - b.y/4) < 2
+    return abs(a.x/4 - b.x/4) + abs(a.y/4 - b.y/4) < 2
 
 
 def event_loop(stdscr):
