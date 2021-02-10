@@ -43,8 +43,8 @@ def init_curses(stdscr):
     curses.curs_set(0)
 
     # Clear and refresh the screen for a blank canvas
-    #stdscr.clear()
-    #stdscr.refresh()
+    stdscr.clear()
+    stdscr.refresh()
 
     # Start colors in curses
     curses.start_color()
@@ -56,6 +56,7 @@ def init_curses(stdscr):
 
 def check_can_move(x, y, walls):
     # first check permanent walls
+    # TODO: dave 
     # now check dwalls
     for wall in walls:
         if x > wall.x-4 and x < wall.x+4 and y > wall.y-4 and y < wall.y+4:
