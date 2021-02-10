@@ -19,6 +19,9 @@ class Entity():
         if self.state != self.last_state:
             self.sprite = Sprite(self.name, self.state)
 
+class DestructibleWall(Entity):
+    def __init__(self, x, y, col=0):
+        super().__init__('destructible_wall', x, y, col=col)
 
 class Character(Entity):
     def move(self, dx, dy):

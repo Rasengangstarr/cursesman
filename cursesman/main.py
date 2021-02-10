@@ -1,8 +1,9 @@
+import random
 import curses
 from curses import wrapper
 import datetime
 
-from cursesman.entities import Player
+from cursesman.entities import Player, DestructibleWall
 
 #init curses
 #curses.noecho()
@@ -24,6 +25,16 @@ def drawmap(stdscr):
                     for by in range(0,fidelity):
                         stdscr.addch(y*fidelity+by, x*fidelity+bx, 'X')
 
+def add_destructible_walls():
+    walls = []
+    for _ in range(20):
+        x = random.randint(0, 13)
+        y = random.randint(0, 13)
+        if x % 2 == 0 and y % 2 == 0:
+            continue
+        else:
+            walls.append(DestructibleWall(x*fidelity, y*fidelity))
+    return walls
 
 def init_curses(stdscr):
 
@@ -43,11 +54,24 @@ def init_curses(stdscr):
 
     event_loop(stdscr)
 
+def check_can_move(x, y, walls):
+    # first check permanent walls
+    # now check dwalls
+    for wall in walls:
+        if x > wall.x-4 and x < wall.x+4 and y > wall.y-4 and y < wall.y+4:
+            return False
+    return True
+
+def is_adjacent(a, b):
+    return abs(a.x/4 - b.x/4 + a.y/4 - b.y/4) < 2
+
+
 def event_loop(stdscr):
     # Clear screen
     height, width = stdscr.getmaxyx()
 
-    player = Player(0, 0)
+    player = Player(4, 4)
+    dwalls = add_destructible_walls()
     while 1:
         stdscr.erase()
         stdscr.refresh()
@@ -58,8 +82,15 @@ def event_loop(stdscr):
         player.render(stdscr)
         for i, bomb in enumerate(player.bombs):
             bomb.render(stdscr)
+            if bomb.exploded:
+                for j, dw in enumerate(dwalls):
+                    if is_adjacent(dw, bomb):
+                        del dwalls[j]
+
             if bomb.fuse <= -5:
                 del player.bombs[i]
+        for dw in dwalls:
+            dw.render(stdscr)
 
         
         # input logic
@@ -67,13 +98,17 @@ def event_loop(stdscr):
         inp = stdscr.getch()
 
         if inp in [ord('w'), ord('k')]:
-            player.move(0, -1)
+            if check_can_move(player.x, player.y-1, dwalls):
+                player.move(0, -1)
         elif inp in [ord('s'), ord('j')]:
-            player.move(0, 1)
+            if check_can_move(player.x, player.y+1, dwalls):
+                player.move(0, 1)
         elif inp in [ord('a'), ord('h')]:
-            player.move(-1, 0)
+            if check_can_move(player.x-1, player.y, dwalls):
+                player.move(-1, 0)
         elif inp in [ord('d'), ord('l')]:
-            player.move(1, 0)
+            if check_can_move(player.x+1, player.y, dwalls):
+                player.move(1, 0)
         elif inp in [ord(' '), ord('e')]:
             player.make_bomb()
         else:
