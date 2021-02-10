@@ -32,8 +32,8 @@ def init_curses(stdscr):
     curses.curs_set(0)
 
     # Clear and refresh the screen for a blank canvas
-    stdscr.clear()
-    stdscr.refresh()
+    #stdscr.clear()
+    #stdscr.refresh()
 
     # Start colors in curses
     curses.start_color()
@@ -41,23 +41,31 @@ def init_curses(stdscr):
     curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
     curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
+    event_loop(stdscr)
 
 def event_loop(stdscr):
     # Clear screen
     height, width = stdscr.getmaxyx()
-    init_curses(stdscr)
 
     player = Player(0, 0)
     while 1:
+        stdscr.erase()
         stdscr.refresh()
-        stdscr.clear()
-        
+
+        # rendering
+        # NOTE: rendering needs to happen before inptu logic
         drawmap(stdscr)
         player.render(stdscr)
-        inp = stdscr.getch()
+        for i, bomb in enumerate(player.bombs):
+            bomb.render(stdscr)
+            if bomb.fuse <= -5:
+                del player.bombs[i]
 
+        
         # input logic
         # TODO: move this to a proper handler class
+        inp = stdscr.getch()
+
         if inp in [ord('w'), ord('k')]:
             player.move(0, -1)
         elif inp in [ord('s'), ord('j')]:
@@ -66,13 +74,17 @@ def event_loop(stdscr):
             player.move(-1, 0)
         elif inp in [ord('d'), ord('l')]:
             player.move(1, 0)
+        elif inp in [ord(' '), ord('e')]:
+            player.make_bomb()
         else:
             # it would be nice to automatically update all non movign entities as idle
             player.update_state('idle')
 
+
+
 def main():
-    wrapper(event_loop)
+    wrapper(init_curses)
 
 if __name__ == '__main__':
-    wrapper(main)
+    main()
 
