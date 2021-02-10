@@ -21,7 +21,15 @@ class Entity():
         if self.state != self.last_state:
             self.sprite = Sprite(self.name, self.state)
 
-class DestructibleWall(Entity):
+class Unwalkable(): pass
+
+class Destructable(): pass
+
+class StaticWall(Entity, Unwalkable):
+    def __init__(self, x, y, col=0):
+        super().__init__('static_wall', x, y, col=col)
+
+class DestructibleWall(Entity, Unwalkable, Destructable):
     def __init__(self, x, y, col=0):
         super().__init__('destructible_wall', x, y, col=col)
 

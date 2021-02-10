@@ -3,26 +3,32 @@ import curses
 from curses import wrapper
 import datetime
 import time
-from entities import Player, DestructibleWall, Bomb
+from entities import Player, DestructibleWall, StaticWall, Bomb, Unwalkable
 
 #how many characters to use to represent one 'block' in game
 fidelity = 4
 
-def drawmap(stdscr):
-    for x in range (0,16):
-        for y in range (0,13):
-            #draw a gapped checkerboard like in screenshot
-            if x % 2 == 0 and y % 2 == 0:
-                #draw in blocks of 'fidelity', such that we can scale it up or down
-                for bx in range(0,fidelity):
-                    for by in range(0,fidelity):
-                        stdscr.addch(y*fidelity+by, x*fidelity+bx, 'X')
+def add_static_walls():
+    walls = []
+    #borders
+    walls.append(StaticWall(12*4, 12*4))
+    for x in range (0,12):
+        walls.append(StaticWall(x*4,0))
+        walls.append(StaticWall(x*4,12*4))
+        walls.append(StaticWall(0,x*4))
+        walls.append(StaticWall(12*4,x*4))
+    #checkerboard
+    for x in range (1,12):
+        for y in range (1,12):
+            if x*4%8 == 0 and y*4%8 == 0:
+                walls.append(StaticWall(x*4, y*4))
+    return walls
 
 def add_destructible_walls():
     walls = []
     for _ in range(20):
-        x = random.randint(0, 13)
-        y = random.randint(0, 13)
+        x = random.randint(1, 11)
+        y = random.randint(1, 11)
         if x % 2 == 0 and y % 2 == 0:
             continue
         else:
@@ -31,9 +37,6 @@ def add_destructible_walls():
 
 def init_curses(stdscr):
 
-    # TODO: replace with proper resfresh code
-    #curses.halfdelay(3) # 10/10 = 1[s] inteval
-    #curses.curs_set(0)
     stdscr.nodelay(1)
     # Clear and refresh the screen for a blank canvas
     stdscr.clear()
@@ -62,30 +65,37 @@ def event_loop(stdscr):
 
     player = Player(4, 4)
     dwalls = add_destructible_walls()
-    
-    room = [player] + dwalls 
-
+    swalls = add_static_walls() 
+    room = [player] + dwalls + swalls
+        
     lastDrawTime = time.time()
 
     while 1:
-        currentTime = time.time()
         
+        #deal with bombs
         explodedBombs = [b for b in room if type(b) == Bomb and b.exploded]
         for b in explodedBombs:
             room = [e for e in room if not (type(e) == DestructibleWall and is_adjacent(b,e))]
-
-
+       
+        currentTime = time.time()
+        #do rendering
         if currentTime >= lastDrawTime + 0.01:
+            #reset draw timer
+            lastDrawTime = currentTime 
             #clean up any dead elements
             room = [e for e in room if e.alive == True]
+            
             stdscr.erase() 
-            lastDrawTime = currentTime
-            drawmap(stdscr)
+            
+            #map room to screen
+            roomToDraw=[ for e in room]
+
+            #
             for entity in room:
                 entity.render(stdscr)
             stdscr.refresh()
         
-        unwalkableEntities = [e for e in room if type(e) == DestructibleWall]
+        unwalkableEntities = [e for e in room if isinstance(e, Unwalkable)]
 
         # input logic
         # TODO: move this to a proper handler class
