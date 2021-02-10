@@ -1,5 +1,8 @@
+import curses
 from curses import wrapper
 import datetime
+
+from cursesman.sprite_loader import Sprite
 
 #init curses
 #curses.noecho()
@@ -22,32 +25,28 @@ def drawmap(stdscr):
                         stdscr.addch(y*fidelity+by, x*fidelity+bx, 'X')
 
 
-def drawplayer(stdscr, px, py):
-    stdscr.addstr(round(py*fidelity), round(px*fidelity), "[oo]")
-    stdscr.addstr(round(py*fidelity+1), round(px*fidelity), "qTTp")
-    stdscr.addstr(round(py*fidelity+2), round(px*fidelity), " ii ")
-    stdscr.addstr(round(py*fidelity+3), round(px*fidelity), "_||_")
-
-
 def event_loop(stdscr):
     # Clear screen
-    px = 0
-    py = 0
+    curses.curs_set(0)
+    px = 5
+    py = 5
+
+    sprite = Sprite('player')
     while 1:
         stdscr.refresh()
         stdscr.clear()
         
         drawmap(stdscr)
-        drawplayer(stdscr, px, py)
+        sprite.render(stdscr, px, py)
         inp = stdscr.getch()
-        if inp == ord('w'):
-            py = py - 0.25
-        if inp == ord('s'):
-            py = py + 0.25
-        if inp == ord('a'):
-            px = px - 0.25
-        if inp == ord('d'):
-            px = px + 0.25
+        if inp in [ord('w'), ord('k')]:
+            py = py - 1
+        if inp in [ord('s'), ord('j')]:
+            py = py + 1
+        if inp in [ord('a'), ord('h')]:
+            px = px - 1
+        if inp in [ord('d'), ord('l')]:
+            px = px + 1
 
 def main():
     wrapper(event_loop)
