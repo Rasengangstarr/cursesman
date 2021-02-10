@@ -2,8 +2,8 @@ import random
 import curses
 from curses import wrapper
 import datetime
-
-from cursesman.entities import Player, DestructibleWall
+import time
+from entities import Player, DestructibleWall, Bomb
 
 #init curses
 #curses.noecho()
@@ -11,9 +11,6 @@ from cursesman.entities import Player, DestructibleWall
 
 #how many characters to use to represent one 'block' in game
 fidelity = 4
-
-
-chstr = "oo\nJL"
 
 def drawmap(stdscr):
     for x in range (0,16):
@@ -39,9 +36,9 @@ def add_destructible_walls():
 def init_curses(stdscr):
 
     # TODO: replace with proper resfresh code
-    curses.halfdelay(3) # 10/10 = 1[s] inteval
-    curses.curs_set(0)
-
+    #curses.halfdelay(3) # 10/10 = 1[s] inteval
+    #curses.curs_set(0)
+    stdscr.nodelay(1)
     # Clear and refresh the screen for a blank canvas
     stdscr.clear()
     stdscr.refresh()
@@ -66,52 +63,55 @@ def check_can_move(x, y, walls):
 def is_adjacent(a, b):
     return abs(a.x/4 - b.x/4) + abs(a.y/4 - b.y/4) < 2
 
-
 def event_loop(stdscr):
     # Clear screen
     height, width = stdscr.getmaxyx()
 
     player = Player(4, 4)
     dwalls = add_destructible_walls()
+    
+    room = [player] + dwalls 
+
+    lastDrawTime = time.time()
+
     while 1:
-        stdscr.erase()
-        stdscr.refresh()
-
-        # rendering
-        # NOTE: rendering needs to happen before inptu logic
-        drawmap(stdscr)
-        player.render(stdscr)
-        for i, bomb in enumerate(player.bombs):
-            bomb.render(stdscr)
-            if bomb.exploded:
-                for j, dw in enumerate(dwalls):
-                    if is_adjacent(dw, bomb):
-                        del dwalls[j]
-
-            if bomb.fuse <= -5:
-                del player.bombs[i]
-        for dw in dwalls:
-            dw.render(stdscr)
-
+        currentTime = time.time()
         
+        explodedBombs = [b for b in room if type(b) == Bomb and b.exploded]
+        for b in explodedBombs:
+            room = [e for e in room if not (type(e) == DestructibleWall and is_adjacent(b,e))]
+
+
+        if currentTime >= lastDrawTime + 0.01:
+            #clean up any dead elements
+            room = [e for e in room if e.alive == True]
+            stdscr.erase() 
+            lastDrawTime = currentTime
+            drawmap(stdscr)
+            for entity in room:
+                entity.render(stdscr)
+            stdscr.refresh()
+        
+        unwalkableEntities = [e for e in room if type(e) == DestructibleWall]
+
         # input logic
         # TODO: move this to a proper handler class
         inp = stdscr.getch()
 
         if inp in [ord('w'), ord('k')]:
-            if check_can_move(player.x, player.y-1, dwalls):
+            if check_can_move(player.x, player.y-1, unwalkableEntities):
                 player.move(0, -1)
         elif inp in [ord('s'), ord('j')]:
-            if check_can_move(player.x, player.y+1, dwalls):
+            if check_can_move(player.x, player.y+1, unwalkableEntities):
                 player.move(0, 1)
         elif inp in [ord('a'), ord('h')]:
-            if check_can_move(player.x-1, player.y, dwalls):
+            if check_can_move(player.x-1, player.y, unwalkableEntities):
                 player.move(-1, 0)
         elif inp in [ord('d'), ord('l')]:
-            if check_can_move(player.x+1, player.y, dwalls):
+            if check_can_move(player.x+1, player.y, unwalkableEntities):
                 player.move(1, 0)
         elif inp in [ord(' '), ord('e')]:
-            player.make_bomb()
+            room.append(Bomb(player.x, player.y))
         else:
             # it would be nice to automatically update all non movign entities as idle
             player.update_state('idle')
