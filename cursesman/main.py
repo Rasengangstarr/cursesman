@@ -8,31 +8,34 @@ from entities import *
 #how many characters to use to represent one 'block' in game
 fidelity = 4
 
-def add_static_walls():
+def add_static_walls(w,h):
     walls = []
     #borders
-    walls.append(StaticWall(12*4, 12*4))
-    for x in range (0,12):
+    walls.append(StaticWall(w*4, h*4))
+    for x in range (0,w):
         walls.append(StaticWall(x*4,0))
-        walls.append(StaticWall(x*4,12*4))
+        walls.append(StaticWall(x*4,h*4))
+    for x in range (0,h):
         walls.append(StaticWall(0,x*4))
-        walls.append(StaticWall(12*4,x*4))
+        walls.append(StaticWall(w*4,x*4))
     #checkerboard
-    for x in range (1,12):
-        for y in range (1,12):
+    for x in range (1,w-1):
+        for y in range (1,h-1):
             if x*4%8 == 0 and y*4%8 == 0:
                 walls.append(StaticWall(x*4, y*4))
     return walls
 
-def add_destructible_walls():
+def add_destructible_walls(w, h):
     walls = []
     doorplaced = False
-    for _ in range(20):
-        x = random.randint(1, 11)
-        y = random.randint(1, 11)
+    #make a quater of the room destructable
+    for _ in range(round((w*h)/4)):
+        x = random.randint(2, w-1)
+        y = random.randint(2, h-1)
         if x % 2 == 0 and y % 2 == 0:
             continue
-        else: 
+        else:
+            #drop a door behind the first wall you draw. Powerups could be placed similarly.
             if not doorplaced:
                 walls.append(Door(x*fidelity, y*fidelity))
                 doorplaced = True
@@ -65,19 +68,27 @@ def check_can_move(x, y, walls):
 def is_adjacent(a, b, dist=2):
     return abs(a.x/4 - b.x/4) + abs(a.y/4 - b.y/4) < dist
 
+def is_inside(a,b):
+    return a.x == b.x and a.y == b.y
+
+def init_room(player, width, height):
+    player.x = 4
+    player.y = 4
+    return add_destructible_walls(width, height) + add_static_walls(width, height) + [player]
+
 def event_loop(stdscr):
     # Clear screen
 
     player = Player(4, 4)
-    dwalls = add_destructible_walls()
-    swalls = add_static_walls() 
-    room = [player] + dwalls + swalls
+    room = init_room(player, 8, 8)
         
     lastDrawTime = time.time()
     
     while 1:
         
         indestructableEntities = [e for e in room if not isinstance(e, Destructable)]
+        unwalkableEntities = [e for e in room if isinstance(e, Unwalkable)]
+        
         #deal with bombs
         explodedBombs = [b for b in room if type(b) == Bomb and b.exploded]
         explosions = []
@@ -89,11 +100,17 @@ def event_loop(stdscr):
         for exp in [exp for exp in explosions]:
             room = [e for e in room if not (isinstance(e, Destructable) and is_adjacent(exp, e, dist=1))]
         
+        # remove explosions that are clipping with indestructable entities
         explosions = [e for e in explosions if check_can_move(e.x, e.y, indestructableEntities)]
         
-        # remove explosions that are clipping with indestructable entities
         room += explosions
-       
+        
+        # deal with doors
+        doors = [d for d in room if type(d) == Door]
+        for d in doors:
+            if is_inside(player, d):
+                room = init_room(player, 20, 13)
+
         currentTime = time.time()
         #do rendering
         if currentTime >= lastDrawTime + 0.01:
@@ -108,7 +125,6 @@ def event_loop(stdscr):
                 entity.render(stdscr, player.x, player.y)
             stdscr.refresh()
         
-        unwalkableEntities = [e for e in room if isinstance(e, Unwalkable)]
 
         # input logic
         # TODO: move this to a proper handler class
