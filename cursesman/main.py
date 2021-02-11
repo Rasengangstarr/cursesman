@@ -3,7 +3,7 @@ import curses
 from curses import wrapper
 import datetime
 import time
-from cursesman.entities import Destructable, Player, DestructibleWall, StaticWall, Bomb, Unwalkable
+from cursesman.entities import *
 
 #how many characters to use to represent one 'block' in game
 fidelity = 4
@@ -57,8 +57,8 @@ def check_can_move(x, y, walls):
             return False
     return True
 
-def is_adjacent(a, b):
-    return abs(a.x/4 - b.x/4) + abs(a.y/4 - b.y/4) < 2
+def is_adjacent(a, b, dist=2):
+    return abs(a.x/4 - b.x/4) + abs(a.y/4 - b.y/4) < dist
 
 def event_loop(stdscr):
     # Clear screen
@@ -75,8 +75,17 @@ def event_loop(stdscr):
         
         #deal with bombs
         explodedBombs = [b for b in room if type(b) == Bomb and b.exploded]
+        explosions = []
         for b in explodedBombs:
-            room = [e for e in room if not (isinstance(e, Destructable) and is_adjacent(b,e))]
+            explosions += b.explosions
+            b.explosions = []
+        room += explosions
+        # remove exploded bombs - this line seems broken
+        #room = [e for e in room if e not in explodedBombs]
+
+        # deal with explosions
+        for exp in [exp for exp in room if type(exp) == Explosion]:
+            room = [e for e in room if not (isinstance(e, Destructable) and is_adjacent(exp, e, dist=1))]
        
         currentTime = time.time()
         #do rendering
@@ -84,7 +93,7 @@ def event_loop(stdscr):
             #reset draw timer
             lastDrawTime = currentTime 
             #clean up any dead elements
-            room = [e for e in room if e.alive == True]
+            room = [e for e in room if e.alive]
             
             stdscr.erase() 
 
@@ -111,7 +120,7 @@ def event_loop(stdscr):
             if check_can_move(player.x+1, player.y, unwalkableEntities):
                 player.move(1, 0)
         elif inp in [ord(' '), ord('e')]:
-            room.append(Bomb(player.x, player.y))
+            room.append(Bomb(player.x, player.y, col=player.col))
 
 
         player.tick()

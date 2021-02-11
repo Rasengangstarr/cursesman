@@ -73,11 +73,13 @@ class Player(Character):
         super().__init__('player', x, y, col=col)
 
 class Bomb(Entity):
-    def __init__(self, x, y, col=0):
+    def __init__(self, x, y, col=0, power=1):
         super().__init__('bomb', x, y, col=col)
         self.fuse = 1
+        self.power = power
         self.exploded = False
         self.burnFuse()
+        self.explosions = []
 
     def burnFuse(self):
         if self.fuse > 0:
@@ -87,9 +89,18 @@ class Bomb(Entity):
             self.explode()
 
     def explode(self):
-        self.state = 'explode'
-        self.sprite = Sprite(self.name, 'explode')
         self.exploded = True
-        threading.Timer(1.0, self.die).start()
-        
+        threading.Timer(0.1, self.die).start()
+        self.explosions = [
+            Explosion(self.x+dx, self.y+dy, col=self.col)
+            for dx in range(-self.power*4, self.power*4+4, 4)
+            for dy in range(-self.power*4, self.power*4+4, 4)
+            if 0 in [dx, dy]
+        ]
 
+
+        
+class Explosion(Entity):
+    def __init__(self, x, y, col=0):
+        super().__init__('explosion', x, y, col=col)
+        threading.Timer(0.3, self.die).start()
