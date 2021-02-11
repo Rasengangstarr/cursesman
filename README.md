@@ -16,7 +16,7 @@ Terminology and Concepts:
   ----
 
 * MVP - 1
-  * Screen Draw around Player
+  * Screen Draw around Player - working
   * Room Generation - working
   * Player Movement + Collision - working
   * Bomb Placement - working
