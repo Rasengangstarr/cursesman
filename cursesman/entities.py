@@ -64,7 +64,14 @@ class DestructibleWall(Entity, Unwalkable, Destructable):
 
 class Character(Entity):
     def move(self, dx, dy):
-        self.update_state('move')
+        if dy < 0:
+            self.update_state('move_up')
+        elif dy > 0:
+            self.update_state('move_down')
+        elif dx > 0:
+            self.update_state('move_right')
+        elif dx < 0:
+            self.update_state('move_left')
         self.x += dx
         self.y += dy
 
