@@ -38,6 +38,7 @@ def add_destructible_walls():
 def init_curses(stdscr):
 
     stdscr.nodelay(1)
+    curses.curs_set(0)
     # Clear and refresh the screen for a blank canvas
     stdscr.clear()
     stdscr.refresh()
@@ -111,10 +112,9 @@ def event_loop(stdscr):
                 player.move(1, 0)
         elif inp in [ord(' '), ord('e')]:
             room.append(Bomb(player.x, player.y))
-        else:
-            # it would be nice to automatically update all non movign entities as idle
-            player.update_state('idle')
 
+
+        player.tick()
 
 
 def main():

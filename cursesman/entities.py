@@ -1,25 +1,54 @@
 from cursesman.sprite_loader import Sprite
+from functools import reduce
 import threading
+import time
+
+class State():
+    def __init__(self, name, valididty):
+        self.start = time.time()
+        self.name = name
+        self.valididty = valididty
+    
+    def check_validity(self):
+        now = time.time()
+        return self.start + self.valididty > now
 
 class Entity():
     def __init__(self, name, x, y, col=0):
         self.name = name
-        self.last_state = 'idle' # this is used to do animation changes
-        self.state = 'idle' # idle is always the default state, everything needs an idle state
+        self.states = []
         self.x = x
         self.y = y
         self.col = col
-        self.sprite = Sprite(self.name, self.state)
+        self.sprite = Sprite(self.name, self.get_state())
         self.alive = True
+
+    def get_state(self):
+        # idle if only idle - else latest state that isnt idle
+        if len(self.states) == 0:
+            return 'idle'
+        else:
+            return self.states[-1].name
+        
     def die(self):
         self.alive = False
+
     def render(self, stdscr):
         self.sprite.render(stdscr, self.x, self.y, col=self.col)
-    def update_state(self, new_state):
-        self.last_state = self.state
-        self.state = new_state
-        if self.state != self.last_state:
-            self.sprite = Sprite(self.name, self.state)
+
+    def update_state(self, state):
+        old_state = self.get_state()
+        self.states.append(State(state, 0.3))
+        self.tick(old_state=old_state)
+
+    def tick(self, old_state=None):
+        # stale out anything we dont need
+        if old_state is None:
+            old_state = self.get_state()
+        self.states = list(filter(lambda x: x.check_validity(), self.states))
+        new_state = self.get_state()
+        if old_state != new_state:
+            self.sprite = Sprite(self.name, new_state)
 
 class Unwalkable(): pass
 

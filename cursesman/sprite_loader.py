@@ -24,7 +24,7 @@ class Sprite():
 
     def render(self, stdscr, x, y, col=0):
         stdscr.attron(curses.color_pair(col))
-        rid = self.render_count % self.sprite_count
+        rid = int(self.render_count/15) % self.sprite_count
         sprite_frame = self.sprite_list[rid]
         sx = int(x)
         sy = int(y)
