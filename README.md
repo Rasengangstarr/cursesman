@@ -17,11 +17,11 @@ Terminology and Concepts:
 
 * MVP - 1
   * Screen Draw around Player
-  * Room Generation
-  * Player Movement + Collision
-  * Bomb Placement
-  * Bomb explosion
-  * Entity destruction by bombs
+  * Room Generation - working
+  * Player Movement + Collision - working
+  * Bomb Placement - working
+  * Bomb explosion - working
+  * Entity destruction by bombs - working
   * Door Generation
   * Moving between rooms via doors
 * MVP - 2
