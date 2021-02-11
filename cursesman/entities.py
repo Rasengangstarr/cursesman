@@ -4,6 +4,9 @@ from functools import reduce
 import threading
 import time
 
+playerXDraw = 8*4
+playerYDraw = 6*4
+
 class State():
     def __init__(self, name, valididty):
         self.start = time.time()
@@ -34,8 +37,17 @@ class Entity():
     def die(self):
         self.alive = False
 
-    def render(self, stdscr):
-        self.sprite.render(stdscr, self.x, self.y, col=self.col)
+    #render relative to the player by default
+    def render(self, stdscr, px, py):
+        h,w = stdscr.getmaxyx()
+
+        drawX = self.x+playerXDraw-px
+        drawY = self.y+playerYDraw-py
+
+        if drawX < w-4 and drawY < h-4 and drawX > 0 and drawY > 0:
+            #print (str(drawX))
+            #print (str(drawY))
+            self.sprite.render(stdscr, drawX, drawY)
 
     def update_state(self, state):
         old_state = self.get_state()
@@ -54,6 +66,10 @@ class Entity():
 class Unwalkable(): pass
 
 class Destructable(): pass
+
+class Door(Entity):
+    def __init__(self, x, y, col=0):
+        super().__init__('door', x, y, col=col)
 
 class StaticWall(Entity, Unwalkable):
     def __init__(self, x, y, col=0):
@@ -80,6 +96,9 @@ class Player(Character):
     def __init__(self, x, y, col=1):
         super().__init__('player', x, y, col=col)
 
+    def render(self, stdscr, px, py):
+        #always draw the player at the same location
+        self.sprite.render(stdscr, playerXDraw, playerYDraw)
 class Bomb(Entity):
     def __init__(self, x, y, col=0, power=1):
         super().__init__('bomb', x, y, col=col)

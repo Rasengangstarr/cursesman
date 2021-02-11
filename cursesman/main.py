@@ -26,13 +26,18 @@ def add_static_walls():
 
 def add_destructible_walls():
     walls = []
+    doorplaced = False
     for _ in range(20):
         x = random.randint(1, 11)
         y = random.randint(1, 11)
         if x % 2 == 0 and y % 2 == 0:
             continue
-        else:
+        else: 
+            if not doorplaced:
+                walls.append(Door(x*fidelity, y*fidelity))
+                doorplaced = True
             walls.append(DestructibleWall(x*fidelity, y*fidelity))
+
     return walls
 
 def init_curses(stdscr):
@@ -62,7 +67,6 @@ def is_adjacent(a, b, dist=2):
 
 def event_loop(stdscr):
     # Clear screen
-    height, width = stdscr.getmaxyx()
 
     player = Player(4, 4)
     dwalls = add_destructible_walls()
@@ -70,7 +74,7 @@ def event_loop(stdscr):
     room = [player] + dwalls + swalls
         
     lastDrawTime = time.time()
-
+    
     while 1:
         
         indestructableEntities = [e for e in room if not isinstance(e, Destructable)]
@@ -80,13 +84,15 @@ def event_loop(stdscr):
         for b in explodedBombs:
             explosions += b.explosions
             b.explosions = []
-        # remove explosions that are clipping with indestructable entities
-        explosions = [e for e in explosions if check_can_move(e.x, e.y, indestructableEntities)]
-        room += explosions
 
         # deal with explosions
-        for exp in [exp for exp in room if type(exp) == Explosion]:
+        for exp in [exp for exp in explosions]:
             room = [e for e in room if not (isinstance(e, Destructable) and is_adjacent(exp, e, dist=1))]
+        
+        explosions = [e for e in explosions if check_can_move(e.x, e.y, indestructableEntities)]
+        
+        # remove explosions that are clipping with indestructable entities
+        room += explosions
        
         currentTime = time.time()
         #do rendering
@@ -99,7 +105,7 @@ def event_loop(stdscr):
             stdscr.erase() 
 
             for entity in room:
-                entity.render(stdscr)
+                entity.render(stdscr, player.x, player.y)
             stdscr.refresh()
         
         unwalkableEntities = [e for e in room if isinstance(e, Unwalkable)]
