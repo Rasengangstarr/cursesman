@@ -16,14 +16,14 @@ Terminology and Concepts:
   ----
 
 * MVP - 1
-  * Screen Draw around Player
+  * Screen Draw around Player - working
   * Room Generation - working
   * Player Movement + Collision - working
   * Bomb Placement - working
   * Bomb explosion - working
   * Entity destruction by bombs - working
-  * Door Generation
-  * Moving between rooms via doors
+  * Door Generation - working
+  * Moving between rooms via doors - working
 * MVP - 2
   * Powerup placement
   * Powerup consumption and effect activation
