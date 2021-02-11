@@ -73,15 +73,16 @@ def event_loop(stdscr):
 
     while 1:
         
+        staticWalls = [e for e in room if isinstance(e, StaticWall)]
         #deal with bombs
         explodedBombs = [b for b in room if type(b) == Bomb and b.exploded]
         explosions = []
         for b in explodedBombs:
             explosions += b.explosions
             b.explosions = []
+        # remove explosions that are clipping with static walls
+        explosions = [e for e in explosions if check_can_move(e.x, e.y, staticWalls)]
         room += explosions
-        # remove exploded bombs - this line seems broken
-        #room = [e for e in room if e not in explodedBombs]
 
         # deal with explosions
         for exp in [exp for exp in room if type(exp) == Explosion]:
