@@ -3,7 +3,7 @@ import curses
 from curses import wrapper
 import datetime
 import time
-from entities import *
+from cursesman.entities import *
 
 #how many characters to use to represent one 'block' in game
 fidelity = 4
@@ -71,16 +71,16 @@ def is_adjacent(a, b, dist=2):
 def is_inside(a,b):
     return a.x == b.x and a.y == b.y
 
-def init_room(player, width, height):
+def init_room(player, width, height, enemies):
     player.x = 4
     player.y = 4
-    return add_destructible_walls(width, height) + add_static_walls(width, height) + [player]
+    return add_destructible_walls(width, height) + add_static_walls(width, height) + [player] + enemies
 
 def event_loop(stdscr):
     # Clear screen
 
     player = Player(4, 4)
-    room = init_room(player, 8, 8)
+    room = init_room(player, 8, 8, [Balloom(8,4)])
         
     lastDrawTime = time.time()
     
@@ -109,7 +109,7 @@ def event_loop(stdscr):
         doors = [d for d in room if type(d) == Door]
         for d in doors:
             if is_inside(player, d):
-                room = init_room(player, 20, 13)
+                room = init_room(player, 20, 13, [Balloom(8,8)])
 
         currentTime = time.time()
         #do rendering
@@ -123,6 +123,8 @@ def event_loop(stdscr):
 
             for entity in room:
                 entity.render(stdscr, player.x, player.y)
+            for enemy in [e for e in room if isinstance(e, Enemy)]:
+                enemy.act(room)
             stdscr.refresh()
         
 

@@ -1,8 +1,9 @@
-from sprite_loader import Sprite
+from cursesman.sprite_loader import Sprite
 
 from functools import reduce
 import threading
 import time
+import random
 
 playerXDraw = 8*4
 playerYDraw = 6*4
@@ -92,6 +93,61 @@ class Character(Entity):
         self.x += dx
         self.y += dy
 
+class Enemy(Character, Destructable):
+    def act(self,room): pass
+
+#The Balloom seems to float around randomly
+class Balloom(Enemy):
+    def __init__(self, x, y, col=1):
+        super().__init__('balloom', x, y, col=col)
+        self.speed = 0.05
+        #TODD this should be whatever python calls an enum
+        self.direction = 1
+        self.changeDirectionAimlessly()
+
+    def changeDirectionAimlessly(self):
+        threading.Timer(1.0, self.changeDirectionAimlessly).start()
+        self.changeDirection()
+
+    def changeDirection(self):
+        self.direction = random.randint(0,4) 
+
+
+    #TODD this obviously doesn't live here but i'm sleepy and wanna get it building so move it wherever you wish
+    def check_can_move(self, x, y, walls):
+      for wall in walls:
+          if x > wall.x-4 and x < wall.x+4 and y > wall.y-4 and y < wall.y+4:
+              return False
+      return True
+    
+
+    def act(self, room):
+        walls = [e for e in room if isinstance(e, Unwalkable)]
+        if self.direction == 0:
+            if (self.check_can_move(self.x-1,self.y, walls)):
+                self.move(-self.speed, 0)
+            else:
+                self.changeDirection()
+        if self.direction == 1:
+            if (self.check_can_move(self.x+1,self.y, walls)):
+                self.move(self.speed, 0)
+            else:
+                self.changeDirection()
+
+        if self.direction == 2:
+            if (self.check_can_move(self.x,self.y-1, walls)):
+                self.move(0, -self.speed)
+            else:
+                self.changeDirection()
+            
+        if self.direction == 3:
+            if (self.check_can_move(self.x,self.y+1, walls)):
+                self.move(0, self.speed)
+            else:
+                self.changeDirection()
+
+
+
 class Player(Character):
     def __init__(self, x, y, col=1):
         super().__init__('player', x, y, col=col)
@@ -99,6 +155,7 @@ class Player(Character):
     def render(self, stdscr, px, py):
         #always draw the player at the same location
         self.sprite.render(stdscr, playerXDraw, playerYDraw)
+
 class Bomb(Entity):
     def __init__(self, x, y, col=0, power=1):
         super().__init__('bomb', x, y, col=col)
