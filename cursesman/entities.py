@@ -1,4 +1,5 @@
-from cursesman.sprite_loader import Sprite
+from sprite_loader import Sprite
+
 from functools import reduce
 import threading
 import time
@@ -97,13 +98,13 @@ class Bomb(Entity):
 
     def explode(self):
         self.exploded = True
-        threading.Timer(0.1, self.die).start()
         self.explosions = [
             Explosion(self.x+dx, self.y+dy, col=self.col)
             for dx in range(-self.power*4, self.power*4+4, 4)
             for dy in range(-self.power*4, self.power*4+4, 4)
             if 0 in [dx, dy]
         ]
+        self.die()
 
 
         

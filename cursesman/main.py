@@ -3,7 +3,7 @@ import curses
 from curses import wrapper
 import datetime
 import time
-from cursesman.entities import *
+from entities import *
 
 #how many characters to use to represent one 'block' in game
 fidelity = 4
@@ -73,15 +73,15 @@ def event_loop(stdscr):
 
     while 1:
         
-        staticWalls = [e for e in room if isinstance(e, StaticWall)]
+        indestructableEntities = [e for e in room if not isinstance(e, Destructable)]
         #deal with bombs
         explodedBombs = [b for b in room if type(b) == Bomb and b.exploded]
         explosions = []
         for b in explodedBombs:
             explosions += b.explosions
             b.explosions = []
-        # remove explosions that are clipping with static walls
-        explosions = [e for e in explosions if check_can_move(e.x, e.y, staticWalls)]
+        # remove explosions that are clipping with indestructable entities
+        explosions = [e for e in explosions if check_can_move(e.x, e.y, indestructableEntities)]
         room += explosions
 
         # deal with explosions
