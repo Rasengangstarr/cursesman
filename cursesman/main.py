@@ -3,7 +3,7 @@ import curses
 from curses import wrapper
 import datetime
 import time
-from cursesman.entities import Destructable, Player, DestructibleWall, StaticWall, Bomb, Unwalkable
+from cursesman.entities import *
 
 #how many characters to use to represent one 'block' in game
 fidelity = 4
@@ -38,6 +38,7 @@ def add_destructible_walls():
 def init_curses(stdscr):
 
     stdscr.nodelay(1)
+    curses.curs_set(0)
     # Clear and refresh the screen for a blank canvas
     stdscr.clear()
     stdscr.refresh()
@@ -56,8 +57,8 @@ def check_can_move(x, y, walls):
             return False
     return True
 
-def is_adjacent(a, b):
-    return abs(a.x/4 - b.x/4) + abs(a.y/4 - b.y/4) < 2
+def is_adjacent(a, b, dist=2):
+    return abs(a.x/4 - b.x/4) + abs(a.y/4 - b.y/4) < dist
 
 def event_loop(stdscr):
     # Clear screen
@@ -72,10 +73,20 @@ def event_loop(stdscr):
 
     while 1:
         
+        staticWalls = [e for e in room if isinstance(e, StaticWall)]
         #deal with bombs
         explodedBombs = [b for b in room if type(b) == Bomb and b.exploded]
+        explosions = []
         for b in explodedBombs:
-            room = [e for e in room if not (isinstance(e, Destructable) and is_adjacent(b,e))]
+            explosions += b.explosions
+            b.explosions = []
+        # remove explosions that are clipping with static walls
+        explosions = [e for e in explosions if check_can_move(e.x, e.y, staticWalls)]
+        room += explosions
+
+        # deal with explosions
+        for exp in [exp for exp in room if type(exp) == Explosion]:
+            room = [e for e in room if not (isinstance(e, Destructable) and is_adjacent(exp, e, dist=1))]
        
         currentTime = time.time()
         #do rendering
@@ -83,7 +94,7 @@ def event_loop(stdscr):
             #reset draw timer
             lastDrawTime = currentTime 
             #clean up any dead elements
-            room = [e for e in room if e.alive == True]
+            room = [e for e in room if e.alive]
             
             stdscr.erase() 
 
@@ -110,11 +121,10 @@ def event_loop(stdscr):
             if check_can_move(player.x+1, player.y, unwalkableEntities):
                 player.move(1, 0)
         elif inp in [ord(' '), ord('e')]:
-            room.append(Bomb(player.x, player.y))
-        else:
-            # it would be nice to automatically update all non movign entities as idle
-            player.update_state('idle')
+            room.append(Bomb(player.x, player.y, col=player.col))
 
+
+        player.tick()
 
 
 def main():
