@@ -48,7 +48,7 @@ class Entity():
         if drawX < w-4 and drawY < h-4 and drawX > 0 and drawY > 0:
             #print (str(drawX))
             #print (str(drawY))
-            self.sprite.render(stdscr, drawX, drawY)
+            self.sprite.render(stdscr, drawX, drawY, col=self.col)
 
     def update_state(self, state):
         old_state = self.get_state()
@@ -98,7 +98,7 @@ class Enemy(Character, Destructable):
 
 #The Balloom seems to float around randomly
 class Balloom(Enemy):
-    def __init__(self, x, y, col=1):
+    def __init__(self, x, y, col=0):
         super().__init__('balloom', x, y, col=col)
         self.speed = 0.05
         #TODD this should be whatever python calls an enum
@@ -154,9 +154,9 @@ class Player(Character):
 
     def render(self, stdscr, px, py):
         #always draw the player at the same location
-        self.sprite.render(stdscr, playerXDraw, playerYDraw)
+        self.sprite.render(stdscr, playerXDraw, playerYDraw, col=self.col)
 
-class Bomb(Entity):
+class Bomb(Entity, Destructable):
     def __init__(self, x, y, col=0, power=1):
         super().__init__('bomb', x, y, col=col)
         self.fuse = 1
@@ -180,7 +180,7 @@ class Bomb(Entity):
             for dy in range(-self.power*4, self.power*4+4, 4)
             if 0 in [dx, dy]
         ]
-        self.die()
+        threading.Timer(0.1, self.die).start()
 
 
         

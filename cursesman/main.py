@@ -79,7 +79,7 @@ def init_room(player, width, height, enemies):
 def event_loop(stdscr):
     # Clear screen
 
-    player = Player(4, 4)
+    player = Player(4, 4, col=1)
     room = init_room(player, 8, 8, [Balloom(8,4)])
         
     lastDrawTime = time.time()
