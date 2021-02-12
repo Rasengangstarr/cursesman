@@ -76,6 +76,12 @@ def init_room(player, width, height, enemies):
     player.y = 4
     return add_destructible_walls(width, height) + add_static_walls(width, height) + [player] + enemies
 
+def render_stats(player, stdscr, time_remaining):
+    stdscr.addstr(1, 5, f'TIME {int(time_remaining)}')
+    stdscr.addstr(1, 15, f'{int(player.score)}')
+    stdscr.addstr(1, 25, f'LEFT {int(player.lives)}')
+
+
 def event_loop(stdscr):
     # Clear screen
 
@@ -83,9 +89,13 @@ def event_loop(stdscr):
     room = init_room(player, 8, 8, [Balloom(8,4)])
         
     lastDrawTime = time.time()
+    room_time = 200
+    room_start = time.time()
     
     while 1:
+        time_remaining = room_time - (time.time() - room_start)
         
+        render_stats(player, stdscr, time_remaining)
         indestructableEntities = [e for e in room if not isinstance(e, Destructable)]
         unwalkableEntities = [e for e in room if isinstance(e, Unwalkable)]
         
@@ -98,7 +108,12 @@ def event_loop(stdscr):
 
         # deal with explosions
         for exp in [exp for exp in explosions]:
+            # add scores
+
+            player.score += sum(map(lambda x: x.score_value, filter(lambda x: (isinstance(x, Enemy) and is_adjacent(exp, x, dist=1)), room)))
+            # remove destructable stuff
             room = [e for e in room if not (isinstance(e, Destructable) and is_adjacent(exp, e, dist=1))]
+
         
         # remove explosions that are clipping with indestructable entities
         explosions = [e for e in explosions if check_can_move(e.x, e.y, indestructableEntities)]
@@ -109,6 +124,7 @@ def event_loop(stdscr):
         doors = [d for d in room if type(d) == Door]
         for d in doors:
             if is_inside(player, d):
+                room_start = time.time()
                 room = init_room(player, 20, 13, [Balloom(8,8)])
 
         currentTime = time.time()

@@ -18,6 +18,17 @@ class State():
         now = time.time()
         return self.start + self.valididty > now
 
+# interfaces
+class Unwalkable(): pass
+
+class Destructable(): pass
+
+class Explosive():
+    def explode(self):
+        # explode must be implemented
+        pass
+
+# entities
 class Entity():
     def __init__(self, name, x, y, col=0):
         self.name = name
@@ -45,7 +56,7 @@ class Entity():
         drawX = self.x+playerXDraw-px
         drawY = self.y+playerYDraw-py
 
-        if drawX < w-4 and drawY < h-4 and drawX > 0 and drawY > 0:
+        if drawX < w-4 and drawY < h-4 and drawX > 0 and drawY > 2: # dont overwrite stats
             #print (str(drawX))
             #print (str(drawY))
             self.sprite.render(stdscr, drawX, drawY, col=self.col)
@@ -63,10 +74,6 @@ class Entity():
         new_state = self.get_state()
         if old_state != new_state:
             self.sprite = Sprite(self.name, new_state)
-
-class Unwalkable(): pass
-
-class Destructable(): pass
 
 class Door(Entity):
     def __init__(self, x, y, col=0):
@@ -104,6 +111,7 @@ class Balloom(Enemy):
         #TODD this should be whatever python calls an enum
         self.direction = 1
         self.changeDirectionAimlessly()
+        self.score_value = 100 # different for each enemy?
 
     def changeDirectionAimlessly(self):
         threading.Timer(1.0, self.changeDirectionAimlessly).start()
@@ -151,15 +159,17 @@ class Balloom(Enemy):
 class Player(Character):
     def __init__(self, x, y, col=1):
         super().__init__('player', x, y, col=col)
+        self.lives = 3
+        self.score = 0
 
     def render(self, stdscr, px, py):
         #always draw the player at the same location
         self.sprite.render(stdscr, playerXDraw, playerYDraw, col=self.col)
 
-class Bomb(Entity, Destructable):
+class Bomb(Entity, Destructable, Explosive):
     def __init__(self, x, y, col=0, power=1):
         super().__init__('bomb', x, y, col=col)
-        self.fuse = 1
+        self.fuse = 3
         self.power = power
         self.exploded = False
         self.burnFuse()
