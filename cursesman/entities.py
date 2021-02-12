@@ -197,7 +197,7 @@ class Player(Character):
             pass
 
 
-class Bomb(Entity, Destructable, Explosive): # Unwalkable
+class Bomb(Entity, Explosive): # Unwalkable
     def __init__(self, x, y, col=0, power=1):
         super().__init__('bomb', x, y, col=col)
         self.fuse = 3
