@@ -61,9 +61,9 @@ class Entity():
             #print (str(drawY))
             self.sprite.render(stdscr, drawX, drawY, col=self.col)
 
-    def update_state(self, state):
+    def update_state(self, state, animation_time=0.3):
         old_state = self.get_state()
-        self.states.append(State(state, 0.3))
+        self.states.append(State(state, animation_time))
         self.tick(old_state=old_state)
 
     def tick(self, old_state=None):
@@ -88,7 +88,32 @@ class DestructibleWall(Entity, Unwalkable, Destructable):
         super().__init__('destructible_wall', x, y, col=col)
 
 class Character(Entity):
-    def move(self, dx, dy):
+    def __init__(self, name, x, y, col=0):
+        super().__init__(name, x, y, col=col)
+        self.speed = 1
+        # maybe not all characters will have the ability to drop bombs
+        self.max_bombs = 1
+        self.bomb_power = 1
+        self.wallpass = False
+        self.bombpass = False
+        self.flamepass = False
+
+    def check_can_move(self, x, y, walls):
+        # apply powerups
+        if self.wallpass:
+            walls = [e for e in walls if not isinstance(e, DestructibleWall)]
+        if self.bombpass:
+            walls = [e for e in walls if not isinstance(e, Bomb)]
+
+        for wall in walls:
+            if x > wall.x-4 and x < wall.x+4 and y > wall.y-4 and y < wall.y+4:
+                return False
+        return True
+
+    def move(self, dx, dy, room):
+        walls = [e for e in room if isinstance(e, Unwalkable)]
+        if not self.check_can_move(self.x+dx, self.y+dy, walls):
+            return # do nothing
         if dy < 0:
             self.update_state('move_up')
         elif dy > 0:
@@ -100,7 +125,23 @@ class Character(Entity):
         self.x += dx
         self.y += dy
 
+    def apply_powerup(self, powerup_name):
+        powerup_field, powerup_func = {
+            'powerup_bombs': ('max_bombs', lambda x: x + 1),
+            'powerup_flames': ('bomb_power', lambda x: x + 1),
+            'powerup_speed': ('speed', lambda x: x + 0), # need to implement this properly
+            'powerup_wallpass': ('wallpass', lambda x: True),
+            'powerup_bombpass': ('bombpass', lambda x: True),
+            'powerup_flamepass': ('flamepass', lambda x: True),
+        }.get(powerup_name)
+
+        setattr(self, powerup_field, powerup_func(getattr(self, powerup_field)))
+
 class Enemy(Character, Destructable):
+    def __init__(self, name, x, y, col=0):
+        super().__init__(name, x, y, col=col)
+        self.score_value = 100
+
     def act(self,room): pass
 
 #The Balloom seems to float around randomly
@@ -111,7 +152,6 @@ class Balloom(Enemy):
         #TODD this should be whatever python calls an enum
         self.direction = 1
         self.changeDirectionAimlessly()
-        self.score_value = 100 # different for each enemy?
 
     def changeDirectionAimlessly(self):
         threading.Timer(1.0, self.changeDirectionAimlessly).start()
@@ -121,38 +161,18 @@ class Balloom(Enemy):
         self.direction = random.randint(0,4) 
 
 
-    #TODD this obviously doesn't live here but i'm sleepy and wanna get it building so move it wherever you wish
-    def check_can_move(self, x, y, walls):
-      for wall in walls:
-          if x > wall.x-4 and x < wall.x+4 and y > wall.y-4 and y < wall.y+4:
-              return False
-      return True
-    
-
     def act(self, room):
-        walls = [e for e in room if isinstance(e, Unwalkable)]
+        original_xy = (self.x, self.y)
         if self.direction == 0:
-            if (self.check_can_move(self.x-1,self.y, walls)):
-                self.move(-self.speed, 0)
-            else:
-                self.changeDirection()
+            self.move(-self.speed, 0, room)
         if self.direction == 1:
-            if (self.check_can_move(self.x+1,self.y, walls)):
-                self.move(self.speed, 0)
-            else:
-                self.changeDirection()
-
+                self.move(self.speed, 0, room)
         if self.direction == 2:
-            if (self.check_can_move(self.x,self.y-1, walls)):
-                self.move(0, -self.speed)
-            else:
-                self.changeDirection()
-            
+            self.move(0, -self.speed, room)
         if self.direction == 3:
-            if (self.check_can_move(self.x,self.y+1, walls)):
-                self.move(0, self.speed)
-            else:
-                self.changeDirection()
+            self.move(0, self.speed, room)
+        if original_xy == (self.x, self.y):
+            self.changeDirection()
 
 
 
@@ -166,7 +186,18 @@ class Player(Character):
         #always draw the player at the same location
         self.sprite.render(stdscr, playerXDraw, playerYDraw, col=self.col)
 
-class Bomb(Entity, Destructable, Explosive):
+    def die(self):
+        self.lives -= 1
+        if self.lives >= 0:
+            self.x = 4
+            self.y = 4
+            self.update_state('revive', animation_time=1)
+        else:
+            # game over
+            pass
+
+
+class Bomb(Entity, Destructable, Explosive): # Unwalkable
     def __init__(self, x, y, col=0, power=1):
         super().__init__('bomb', x, y, col=col)
         self.fuse = 3
@@ -198,3 +229,10 @@ class Explosion(Entity):
     def __init__(self, x, y, col=0):
         super().__init__('explosion', x, y, col=col)
         threading.Timer(0.3, self.die).start()
+
+class Powerup(Entity):
+    def __init__(self, name, x, y, col=0):
+        super().__init__(name, x, y, col=col)
+        self.score_value = 1000
+
+
