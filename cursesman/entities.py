@@ -1,13 +1,15 @@
-from cursesman.sprite_loader import Sprite
+from sprite_loader import Sprite
 
 from functools import reduce
 import threading
 import time
 import random
+import logging
 
 playerXDraw = 8*4
 playerYDraw = 6*4
 
+logging.basicConfig(filename='entities.log', filemode='w', format='%(name)s - %(message)s')
 class State():
     def __init__(self, name, valididty):
         self.start = time.time()
@@ -92,11 +94,11 @@ class Character(Entity):
         super().__init__(name, x, y, col=col)
         self.speed = 1
         # maybe not all characters will have the ability to drop bombs
-        self.max_bombs = 1
-        self.bomb_power = 1
+        self.max_bombs = 2
+        self.bomb_power = 2
         self.wallpass = False
         self.bombpass = False
-        self.flamepass = False
+        self.flamepass = True
 
     def check_can_move(self, x, y, walls):
         # apply powerups
@@ -176,7 +178,7 @@ class Balloom(Enemy):
 
 
 
-class Player(Character):
+class Player(Character, Destructable):
     def __init__(self, x, y, col=1):
         super().__init__('player', x, y, col=col)
         self.lives = 3
@@ -197,7 +199,7 @@ class Player(Character):
             pass
 
 
-class Bomb(Entity, Explosive): # Unwalkable
+class Bomb(Entity, Explosive, Destructable): # Unwalkable
     def __init__(self, x, y, col=0, power=1):
         super().__init__('bomb', x, y, col=col)
         self.fuse = 3
@@ -214,21 +216,27 @@ class Bomb(Entity, Explosive): # Unwalkable
             self.explode()
 
     def explode(self):
-        self.exploded = True
-        self.explosions = [
-            Explosion(self.x+dx, self.y+dy, col=self.col)
-            for dx in range(-self.power*4, self.power*4+4, 4)
-            for dy in range(-self.power*4, self.power*4+4, 4)
-            if 0 in [dx, dy]
-        ]
-        threading.Timer(0.1, self.die).start()
+        #this way the list is ordered in directional groups, from the inside out.
+        logging.warning("power = " + str(self.power))
+        explosions = []
+        
+        #left explosions
+        for p in range (1, self.power+1):
+            explosions.append(Explosion(self.x-4*p, self.y, col=self.col))
+            explosions.append(Explosion(self.x+4*p, self.y, col=self.col))
+            explosions.append(Explosion(self.x, self.y-4*p, col=self.col))
+            explosions.append(Explosion(self.x, self.y+4*p, col=self.col))
 
+        self.explosions = explosions
 
+        logging.warning(self.explosions)
+        self.exploded = True 
         
 class Explosion(Entity):
     def __init__(self, x, y, col=0):
         super().__init__('explosion', x, y, col=col)
-        threading.Timer(0.3, self.die).start()
+    def schedule_for_deletion(self, timer):
+        threading.Timer(timer, self.die).start()
 
 class Powerup(Entity):
     def __init__(self, name, x, y, col=0):
