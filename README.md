@@ -1,6 +1,6 @@
 # Cursesman
 
-![image-example](https://raw.githubusercontent.com/Rasengangstarr/cursesman/main/docs/bombermanexample.jpg)
+![image-example](https://raw.githubusercontent.com/Rasengangstarr/cursesman/main/docs/cursesman_screen.png)
 
 Terminology and Concepts:  
 ----
