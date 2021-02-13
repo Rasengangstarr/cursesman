@@ -40,7 +40,7 @@ class Entity():
         self.col = col
         self.sprite = Sprite(self.name, self.get_state())
         self.alive = True
-
+        self.flamepass = False
     def get_state(self):
         # idle if only idle - else latest state that isnt idle
         if len(self.states) == 0:
@@ -80,6 +80,7 @@ class Entity():
 class Door(Entity):
     def __init__(self, x, y, col=0):
         super().__init__('door', x, y, col=col)
+        self.flamepass = True
 
 class StaticWall(Entity, Unwalkable):
     def __init__(self, x, y, col=0):
@@ -98,7 +99,7 @@ class Character(Entity):
         self.bomb_power = 2
         self.wallpass = False
         self.bombpass = False
-        self.flamepass = True
+        self.flamepass = False
 
     def check_can_move(self, x, y, walls):
         # apply powerups
