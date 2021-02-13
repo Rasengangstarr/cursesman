@@ -145,7 +145,26 @@ def event_loop(stdscr):
         
         for b in explodedBombs:
             logging.warning("roo")
-            
+           
+            #explaination for TODD - the explosions are created from the inside out. in order for them to 
+            #interact with the world after the bomb is destroyed, i decoupled them from the bomb with deepcopy
+            #(idk if this is an antipattern in python, but in a normal language i wouldnt have to import a library
+            #to pass by value). In order to make sure an explosion doesn't continue past and indestructable entity,
+            #we iterate through the groups, and then by radius, stopping the 'chain' of explosions at the point where 
+            #we run into something, and we schedule the new explosion for deletion (as the constructor isn't called
+            #when deep copy is). You should be able to move the player and bomb loops below into this for loop, 
+            #although it will get very chevrony unless we start moving things into functions soon. 
+            #I suggest you try moving the 4 lines in the if statement into a function, which you could then call
+            #in a recursive manner on any bombs that get hit by the explosions:
+
+            #methodorooni(explosion):
+            #   if the explosion hit a bomb
+            #       bomb.explode()
+            #       for explosions in the bomb:
+            #           methodorooni(bomb)
+
+            # or similar
+
             #for each directional group of explosions
             for g in range(0, 4):
                 #for each explosion in the group
