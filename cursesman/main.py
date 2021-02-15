@@ -1,11 +1,14 @@
 import sys
+import logging
 import random
 import curses
 from curses import wrapper
 import datetime
 import time
-from cursesman.entities import *
+import copy
+from entities import *
 
+logging.basicConfig(filename='main.log', filemode='w', format='%(name)s - %(message)s')
 #how many characters to use to represent one 'block' in game
 fidelity = 4
 
@@ -106,6 +109,51 @@ def render_game_over(stdscr):
             break
         stdscr.refresh()
 
+def handle_exploded_bombs(room, player):
+    unexploded = [b for b in room if isinstance(b, Explosive)and not b.exploded]
+    explodedBombs = [b for b in room if type(b) == Bomb and b.exploded]
+    indestructableEntities = [e for e in room if not isinstance(e, Destructable) and not e.flamepass]
+    
+    for b in explodedBombs:
+        logging.warning("roo")
+       
+        #for each directional group of explosions
+        for g in range(0, 4):
+            #for each explosion in the group
+            for ex in range(0,b.power):
+                thisExplosion = g+ex*4
+                if not any([is_adjacent(b.explosions[thisExplosion], entity, dist=0.75) for entity in indestructableEntities]):
+                    #we must make a copy of the explosion at this point, since the bomb it belongs to will need to be destroyed.
+                    logging.warning(str(g+ex*4) + " exploded")
+                    explosionInWorld = copy.deepcopy(b.explosions[thisExplosion])
+                    explosionInWorld.schedule_for_deletion(0.3)
+                    room.append(explosionInWorld)
+                    for bu in unexploded:
+                        if is_adjacent(b.explosions[thisExplosion], bu, dist=0.75):
+                            bu.explode()
+                            handle_exploded_bombs(room, player)
+                    
+                    logging.warning("flamepass" + str(player.flamepass))
+                    # handle player
+                    if is_adjacent(b.explosions[thisExplosion], player, dist=1) and not player.flamepass:
+                        player.die()
+                        logging.warning("ded")
+                        if player.lives < 0:
+                            game_over=True
+                            break
+                    # add scores
+                    player.score += sum(map(lambda x: x.score_value, filter(lambda x: (isinstance(x, Enemy) and is_adjacent(b.explosions[thisExplosion], x, dist=1)), room)))
+                    # remove destructable stuff
+                    [e.die() for e in room if (isinstance(e, Destructable) and is_adjacent(b.explosions[thisExplosion], e, dist=1))]
+            
+
+                else:
+                    #stop processing this group
+                    break
+        #the bomb is spent, so get rid of it
+        b.die()
+
+
 def event_loop(stdscr):
     # Clear screen
     debug_mode = len(sys.argv) > 1 and sys.argv[1] == '--debug'
@@ -134,43 +182,7 @@ def event_loop(stdscr):
         powerups = [e for e in room if isinstance(e, Powerup)]
         nbombs = len([e for e in room if isinstance(e, Bomb)])
         
-        #deal with bombs
-        last_unexploded = -1
-        while True:
-            explosions = []
-            unexploded = [b for b in room if isinstance(b, Explosive)and not b.exploded]
-            explodedBombs = [b for b in room if type(b) == Bomb and b.exploded]
-            for b in explodedBombs:
-                explosions += b.explosions
-                b.explosions = []
-
-            # deal with explosions
-            for exp in [exp for exp in explosions]:
-                for b in unexploded:
-                    if is_adjacent(exp, b):
-                        # i dont really like this
-                        b.explode()
-                        explosions += b.explosions
-                        b.explosions = []
-            for exp in [exp for exp in explosions]:
-                # handle player
-                if is_adjacent(exp, player, dist=1) and not player.flamepass:
-                    player.die()
-                    if player.lives < 0:
-                        game_over=True
-                        break
-                # add scores
-                player.score += sum(map(lambda x: x.score_value, filter(lambda x: (isinstance(x, Enemy) and is_adjacent(exp, x, dist=1)), room)))
-                # remove destructable stuff
-                room = [e for e in room if not (isinstance(e, Destructable) and is_adjacent(exp, e, dist=1))]
-            
-            # remove explosions that are clipping with indestructable entities
-            explosions = [e for e in explosions if not any([is_adjacent(e, i, dist=0.75) for i in indestructableEntities])]
-        
-            room += explosions
-            if len(unexploded) == last_unexploded:
-                break
-            last_unexploded = len(unexploded)
+        handle_exploded_bombs(room, player)
 
         for p in powerups:
             if is_inside(p, player):
@@ -186,22 +198,20 @@ def event_loop(stdscr):
                     game_over=True
                     break
 
-        
         # deal with doors
         doors = [d for d in room if type(d) == Door]
         for d in doors:
             if is_inside(player, d):
                 room_start = time.time()
-                room = init_room(player, 20, 13, [Balloom(8,12)])
-
-        currentTime = time.time()
+                room = init_room(player, 20, 13, [Balloom(8,12)])   
+        
         room = [e for e in room if e.alive]
+        
+        currentTime = time.time()
         #do rendering
         if currentTime >= lastDrawTime + 0.01:
             #reset draw timer
             lastDrawTime = currentTime 
-            #clean up any dead elements
-            
             stdscr.erase() 
 
             for entity in room:
