@@ -1,10 +1,13 @@
-from cursesman.sprite_loader import Sprite
+from sprite_loader import Sprite
 
 from functools import reduce
 import threading
 import time
 import random
 import logging
+import pyaudio
+import wave
+import vlc
 
 playerXDraw = 8*4
 playerYDraw = 6*4
@@ -95,8 +98,8 @@ class Character(Entity):
         super().__init__(name, x, y, col=col)
         self.speed = 1
         # maybe not all characters will have the ability to drop bombs
-        self.max_bombs = 2
-        self.bomb_power = 2
+        self.max_bombs = 1
+        self.bomb_power = 1
         self.wallpass = False
         self.bombpass = False
         self.flamepass = False
@@ -227,9 +230,11 @@ class Bomb(Entity, Explosive, Destructable): # Unwalkable
             explosions.append(Explosion(self.x+4*p, self.y, col=self.col))
             explosions.append(Explosion(self.x, self.y-4*p, col=self.col))
             explosions.append(Explosion(self.x, self.y+4*p, col=self.col))
+        explosions.append(Explosion(self.x, self.y, col=self.col))
 
         self.explosions = explosions
-
+        player = vlc.MediaPlayer("explosion.wav")
+        player.play()
         logging.warning(self.explosions)
         self.exploded = True 
         
@@ -242,6 +247,7 @@ class Explosion(Entity):
 class Powerup(Entity):
     def __init__(self, name, x, y, col=0):
         super().__init__(name, x, y, col=col)
+        self.flamepass = True
         self.score_value = 1000
 
 

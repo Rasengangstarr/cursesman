@@ -6,7 +6,7 @@ from curses import wrapper
 import datetime
 import time
 import copy
-from cursesman.entities import *
+from entities import *
 
 logging.basicConfig(filename='main.log', filemode='w', format='%(name)s - %(message)s')
 #how many characters to use to represent one 'block' in game
