@@ -6,11 +6,49 @@ from curses import wrapper
 import datetime
 import time
 import copy
-from entities import *
+import pyfiglet
+from cursesman.entities import *
 
 logging.basicConfig(filename='main.log', filemode='w', format='%(name)s - %(message)s')
 #how many characters to use to represent one 'block' in game
 fidelity = 4
+
+def start_screen(stdscr):
+    h,w = stdscr.getmaxyx()
+    
+    states = ["S", "C", "E"]
+    state = 0
+    while True:
+        stdscr.erase()
+        
+        stdscr.addstr(0,0,pyfiglet.figlet_format("  CURSESMAN", font = "rounded"))
+        if state == 0:
+            stdscr.addstr(10,0,pyfiglet.figlet_format("*     START" , font = "standard"))
+        else:
+            stdscr.addstr(10,0,pyfiglet.figlet_format("      START" , font = "standard"))
+        if state == 1:
+            stdscr.addstr(16,0,pyfiglet.figlet_format("*      CONTINUE", font="standard"))
+        else:
+            stdscr.addstr(16,0,pyfiglet.figlet_format("      CONTINUE", font="standard"))
+        
+        if state == 2:
+            stdscr.addstr(22,0,pyfiglet.figlet_format("*     EXIT", font="standard")) 
+        else:
+            stdscr.addstr(22,0,pyfiglet.figlet_format("      EXIT", font="standard")) 
+        
+        stdscr.refresh()
+        
+        inp = stdscr.getch()
+        if inp in [ord('w'), ord('k')] and state > 0:
+            state -= 1
+        elif inp in [ord('s'), ord('j')] and state < len(states) - 1:
+            state += 1 
+        elif inp == ord(' '):
+            if state == 0:
+                return
+            elif state == 2:
+                quit()
+        continue
 
 def roll_powerup(x, y):
     rnd = random.random()
@@ -166,6 +204,8 @@ def event_loop(stdscr):
     room_start = time.time()
     game_over = False
 
+    start_screen(stdscr)
+    
     if debug_mode:
         player.max_bombs = 3
         player.bomb_power=5
