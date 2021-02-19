@@ -25,10 +25,13 @@ Terminology and Concepts:
   * Door Generation - working
   * Moving between rooms via doors - working
 * MVP - 2
-  * Powerup placement
-  * Powerup consumption and effect activation
-  * Basic enemies [Balloom](https://strategywiki.org/wiki/Bomberman/How_to_play#Enemies)
-  * Player death and loss of a 'life' (with associated loss of powerups)
-  * Game over state
+  * Powerup placement - working
+  * Powerup consumption and effect activation - working
+  * Basic enemies [Balloom](https://strategywiki.org/wiki/Bomberman/How_to_play#Enemies) - working
+  * Player death and loss of a 'life' (with associated loss of powerups) - working
+  * Game over state - working, but needs refinement rather than a quit
 * MVP - 3
+  * Proper end screen
+  * Define all the levels
+  * Add the second enemy type
   * Networking and multiplayer features - we can expand on this when we get there.
