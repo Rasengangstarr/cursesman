@@ -1,4 +1,4 @@
-from cursesman.sprite_loader import Sprite
+from sprite_loader import Sprite
 
 from functools import reduce
 import threading

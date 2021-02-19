@@ -7,7 +7,8 @@ import datetime
 import time
 import copy
 import pyfiglet
-from cursesman.entities import *
+from entities import *
+from rooms import rooms
 
 logging.basicConfig(filename='main.log', filemode='w', format='%(name)s - %(message)s')
 #how many characters to use to represent one 'block' in game
@@ -128,10 +129,26 @@ def is_adjacent(a, b, dist=2):
 def is_inside(a,b):
     return a.x == b.x and a.y == b.y
 
-def init_room(player, width, height, enemies):
+def init_room(player, room):
     player.x = 4
     player.y = 4
-    return add_destructible_walls(width, height) + add_static_walls(width, height) + [player] + enemies
+
+    return_room = add_destructible_walls(room[1], room[2]) + add_static_walls(room[1], room[2]) + [player]
+
+    for e in room[3]:
+        while True:
+            f = copy.deepcopy(e)
+
+            if len([en for en in return_room if en.x == f.x and en.y == f.y]) > 0:
+                f.x = random.randint(0, room[1]) * 4
+                f.y = random.randint(0, room[2]) * 4
+                e = f
+            else:
+                return_room.append(f)
+                break
+
+    return return_room
+        
 
 def render_stats(player, stdscr, time_remaining):
     stdscr.addstr(1, 5, f'TIME {int(time_remaining)}')
@@ -195,9 +212,9 @@ def handle_exploded_bombs(room, player):
 def event_loop(stdscr):
     # Clear screen
     debug_mode = len(sys.argv) > 1 and sys.argv[1] == '--debug'
-
+    currentRoom = 0
     player = Player(4, 4, col=1)
-    room = init_room(player, 8, 8, [Balloom(16,4)])
+    room = init_room(player, rooms[currentRoom])
         
     lastDrawTime = time.time()
     room_time = 200
@@ -243,7 +260,8 @@ def event_loop(stdscr):
         for d in doors:
             if is_inside(player, d):
                 room_start = time.time()
-                room = init_room(player, 20, 13, [Balloom(8,12)])   
+                currentRoom += 1
+                room = init_room(player,rooms[currentRoom])   
         
         room = [e for e in room if e.alive]
         
