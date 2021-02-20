@@ -166,7 +166,6 @@ class Balloom(Enemy):
     def changeDirection(self):
         self.direction = random.randint(0,4) 
 
-
     def act(self, room):
         original_xy = (self.x, self.y)
         if self.direction == 0:
@@ -179,8 +178,6 @@ class Balloom(Enemy):
             self.move(0, self.speed, room)
         if original_xy == (self.x, self.y):
             self.changeDirection()
-
-
 
 class Player(Character, Destructable):
     def __init__(self, x, y, col=1):
@@ -201,7 +198,6 @@ class Player(Character, Destructable):
         else:
             # game over
             pass
-
 
 class Bomb(Entity, Explosive, Destructable): # Unwalkable
     def __init__(self, x, y, col=0, power=1):
