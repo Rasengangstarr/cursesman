@@ -8,6 +8,7 @@ import logging
 import pyaudio
 import wave
 import vlc
+import math
 
 playerXDraw = 8*4
 playerYDraw = 6*4
@@ -112,7 +113,7 @@ class Character(Entity):
             walls = [e for e in walls if not isinstance(e, Bomb)]
 
         for wall in walls:
-            if x > wall.x-4 and x < wall.x+4 and y > wall.y-4 and y < wall.y+4:
+            if math.floor(x) > wall.x-4 and math.floor(x) < wall.x+4 and math.floor(y) > wall.y-4 and math.floor(y) < wall.y+4:
                 return False
         return True
 
@@ -178,6 +179,57 @@ class Balloom(Enemy):
             self.move(0, self.speed, room)
         if original_xy == (self.x, self.y):
             self.changeDirection()
+
+#The Balloom seems to float around randomly
+class Oneil(Enemy):
+    def __init__(self, x, y, col=0):
+        super().__init__('balloom', x, y, col=col)
+        self.speed = 0.1
+        #TODD this should be whatever python calls an enum
+        self.direction = 1
+        self.changeDirectionAimlessly()
+
+    def changeDirectionAimlessly(self):
+        threading.Timer(1.0, self.changeDirectionAimlessly).start()
+        self.changeDirection()
+
+    def changeDirection(self):
+        self.direction = random.randint(0,4) 
+
+    def act(self, room):
+        players = [e for e in room if type(e) == Player]
+        player_to_home = None
+        homing_player = False
+        for p in players:
+            if (((p.x-self.x)**2+(p.y-self.y)**2) ** 0.5) <= 24:
+                homing_player = True
+                player_to_home = p
+        if homing_player == False:
+            original_xy = (self.x, self.y)
+            if self.direction == 0:
+                self.move(self.speed, 0, room)
+            if self.direction == 1:
+                    self.move(self.speed, 0, room)
+            if self.direction == 2:
+                self.move(0, -self.speed, room)
+            if self.direction == 3:
+                self.move(0, self.speed, room)
+            if original_xy == (self.x, self.y):
+                self.changeDirection()
+        else:
+            if math.floor(self.x) < player_to_home.x :
+                self.move(self.speed, 0, room)
+                logging.warning("TRYING TO MOVE RIGHT" + " " + str(player_to_home.x) + " " + str(math.floor(self.x)))
+            if math.floor(self.x) > player_to_home.x :
+                logging.warning("TRYING TO MOVE LEFT")
+                self.move(-self.speed, 0, room)
+            if math.floor(self.y) < player_to_home.y :
+                logging.warning("TRYING TO MOVE DOWN")
+                self.move(0, self.speed, room)
+            if math.floor(self.y) > player_to_home.y :
+                logging.warning("TRYING TO MOVE UP")
+                self.move(0, -self.speed, room)
+
 
 class Player(Character, Destructable):
     def __init__(self, x, y, col=1):
