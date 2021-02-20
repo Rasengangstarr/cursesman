@@ -1,11 +1,13 @@
 import sys
 import logging
+import vlc
 import random
 import curses
 from curses import wrapper
 import datetime
 import time
 import copy
+import threading
 import pyfiglet
 from entities import *
 from rooms import rooms
@@ -208,6 +210,11 @@ def handle_exploded_bombs(room, player):
         #the bomb is spent, so get rid of it
         b.die()
 
+def music_looper():
+    threading.Timer(35.0, music_looper).start()
+    music_player = vlc.MediaPlayer("chipchoon1.mp3")
+    music_player.play()
+
 
 def event_loop(stdscr):
     # Clear screen
@@ -222,7 +229,8 @@ def event_loop(stdscr):
     game_over = False
 
     start_screen(stdscr)
-    
+    music_looper() 
+
     if debug_mode:
         player.max_bombs = 3
         player.bomb_power=5
@@ -252,6 +260,7 @@ def event_loop(stdscr):
             if is_adjacent(ene, player, dist=0.5):
                 player.die()
                 if player.lives < 0:
+                    music_player.stop()
                     game_over=True
                     break
 
