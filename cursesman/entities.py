@@ -153,7 +153,7 @@ class Enemy(Character, Destructable):
 
 #The Balloom seems to float around randomly
 class Balloom(Enemy):
-    def __init__(self, x, y, col=0):
+    def __init__(self, x, y, col=2):
         super().__init__('balloom', x, y, col=col)
         self.speed = 0.05
         #TODD this should be whatever python calls an enum
@@ -182,8 +182,8 @@ class Balloom(Enemy):
 
 #The Balloom seems to float around randomly
 class Oneil(Enemy):
-    def __init__(self, x, y, col=0):
-        super().__init__('balloom', x, y, col=col)
+    def __init__(self, x, y, col=1):
+        super().__init__('oneil', x, y, col=col)
         self.speed = 0.1
         #TODD this should be whatever python calls an enum
         self.direction = 1
