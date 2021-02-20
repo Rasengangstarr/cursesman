@@ -1,4 +1,5 @@
 # Cursesman
+With Music by https://github.com/RobinJSanders
 
 ![image-example](https://raw.githubusercontent.com/Rasengangstarr/cursesman/main/docs/cursesman_screen.png)
 
