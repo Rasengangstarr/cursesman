@@ -1,8 +1,10 @@
+from cursesman.settings import MUSIC_DIR
+
 from playsound import playsound
 import threading
 
 def play_sound(path):
-    k = lambda: playsound(path)
+    k = lambda: playsound(str(MUSIC_DIR / path))
     t = threading.Thread(target=k)
     t.start()
 
