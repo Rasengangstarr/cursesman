@@ -1,9 +1,7 @@
-import curses
-import os
-from pathlib import Path
+from cursesman.settings import SPRITES_DIR
 
-ROOT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
-SPRITES_DIR = ROOT_DIR / 'sprites'
+import curses
+
 
 
 class Sprite():

@@ -1,2 +1,2 @@
 pyfiglet==0.8.post1
-python-vlc==3.0.11115
+playsound==1.2.2

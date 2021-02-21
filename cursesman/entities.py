@@ -1,12 +1,13 @@
 from cursesman.sprite_loader import Sprite
+from cursesman.utils import play_sound
 
 from functools import reduce
+from playsound import playsound
 import threading
 import time
 import random
 import logging
 import wave
-import vlc
 import math
 
 playerXDraw = 8*4
@@ -280,8 +281,7 @@ class Bomb(Entity, Explosive, Destructable): # Unwalkable
         explosions.append(Explosion(self.x, self.y, col=self.col))
 
         self.explosions = explosions
-        player = vlc.MediaPlayer("explosion.wav")
-        player.play()
+        play_sound("explosion.wav")
         logging.warning(self.explosions)
         self.exploded = True 
         

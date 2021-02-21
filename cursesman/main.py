@@ -1,6 +1,5 @@
 import sys
 import logging
-import vlc
 import random
 import curses
 from curses import wrapper
@@ -11,6 +10,7 @@ import threading
 import pyfiglet
 from cursesman.entities import *
 from cursesman.rooms import rooms
+from cursesman.utils import loop_sound
 
 logging.basicConfig(filename='main.log', filemode='w', format='%(name)s - %(message)s')
 #how many characters to use to represent one 'block' in game
@@ -210,12 +210,6 @@ def handle_exploded_bombs(room, player):
         #the bomb is spent, so get rid of it
         b.die()
 
-def music_looper():
-    threading.Timer(35.0, music_looper).start()
-    music_player = vlc.MediaPlayer("chipchoon1.mp3")
-    music_player.play()
-
-
 def event_loop(stdscr):
     # Clear screen
     debug_mode = len(sys.argv) > 1 and sys.argv[1] == '--debug'
@@ -229,7 +223,7 @@ def event_loop(stdscr):
     game_over = False
 
     start_screen(stdscr)
-    music_looper() 
+    loop_sound('chipchoon1.mp3', 35)
 
     if debug_mode:
         player.max_bombs = 3
