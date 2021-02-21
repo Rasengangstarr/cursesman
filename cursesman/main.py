@@ -9,8 +9,8 @@ import time
 import copy
 import threading
 import pyfiglet
-from entities import *
-from rooms import rooms
+from cursesman.entities import *
+from cursesman.rooms import rooms
 
 logging.basicConfig(filename='main.log', filemode='w', format='%(name)s - %(message)s')
 #how many characters to use to represent one 'block' in game

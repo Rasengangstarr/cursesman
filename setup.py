@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name="cursesman",
     version="0.0.1",
-    author="David Williams, Todd Perry",
+    author="David Williams, Todd Perry, Robin Sanders",
     author_email="todd.perry@myport.ac.uk",
     description="Bomberman for the command line",
     long_description=long_description,

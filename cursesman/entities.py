@@ -1,11 +1,10 @@
-from sprite_loader import Sprite
+from cursesman.sprite_loader import Sprite
 
 from functools import reduce
 import threading
 import time
 import random
 import logging
-import pyaudio
 import wave
 import vlc
 import math
