@@ -13,6 +13,10 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/rasengangstarr/cursesman",
     packages=setuptools.find_packages(),
+    install_requires=[
+        'pyfiglet==0.8.post1',
+        'playsound==1.2.2'
+    ],
     python_requires='>=3.6',
     classifiers=[
         "Programming Language :: Python :: 3",

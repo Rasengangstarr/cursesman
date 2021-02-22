@@ -1,16 +1,18 @@
 from cursesman.sprite_loader import Sprite
+from cursesman.utils import play_sound
+from cursesman.settings import FIDELITY
 
 from functools import reduce
+from playsound import playsound
 import threading
 import time
 import random
 import logging
 import wave
-import vlc
 import math
 
-playerXDraw = 8*4
-playerYDraw = 6*4
+playerXDraw = 8*FIDELITY
+playerYDraw = 6*FIDELITY
 
 logging.basicConfig(filename='entities.log', filemode='w', format='%(name)s - %(message)s')
 class State():
@@ -61,7 +63,7 @@ class Entity():
         drawX = self.x+playerXDraw-px
         drawY = self.y+playerYDraw-py
 
-        if drawX < w-4 and drawY < h-4 and drawX > 0 and drawY > 2: # dont overwrite stats
+        if drawX < w-FIDELITY and drawY < h-FIDELITY and drawX > 0 and drawY > 2: # dont overwrite stats
             #print (str(drawX))
             #print (str(drawY))
             self.sprite.render(stdscr, drawX, drawY, col=self.col)
@@ -112,7 +114,7 @@ class Character(Entity):
             walls = [e for e in walls if not isinstance(e, Bomb)]
 
         for wall in walls:
-            if math.floor(x) > wall.x-4 and math.floor(x) < wall.x+4 and math.floor(y) > wall.y-4 and math.floor(y) < wall.y+4:
+            if math.floor(x) > wall.x-FIDELITY and math.floor(x) < wall.x+FIDELITY and math.floor(y) > wall.y-FIDELITY and math.floor(y) < wall.y+FIDELITY:
                 return False
         return True
 
@@ -243,8 +245,8 @@ class Player(Character, Destructable):
     def die(self):
         self.lives -= 1
         if self.lives >= 0:
-            self.x = 4
-            self.y = 4
+            self.x = FIDELITY
+            self.y = FIDELITY
             self.update_state('revive', animation_time=1)
         else:
             # game over
@@ -269,19 +271,18 @@ class Bomb(Entity, Explosive, Destructable): # Unwalkable
     def explode(self):
         #this way the list is ordered in directional groups, from the inside out.
         logging.warning("power = " + str(self.power))
-        explosions = []
+        explosions = []#[Explosion(self.x, self.y, col=self.col)]
         
         #left explosions
         for p in range (1, self.power+1):
-            explosions.append(Explosion(self.x-4*p, self.y, col=self.col))
-            explosions.append(Explosion(self.x+4*p, self.y, col=self.col))
-            explosions.append(Explosion(self.x, self.y-4*p, col=self.col))
-            explosions.append(Explosion(self.x, self.y+4*p, col=self.col))
+            explosions.append(Explosion(self.x-FIDELITY*p, self.y, col=self.col))
+            explosions.append(Explosion(self.x+FIDELITY*p, self.y, col=self.col))
+            explosions.append(Explosion(self.x, self.y-FIDELITY*p, col=self.col))
+            explosions.append(Explosion(self.x, self.y+FIDELITY*p, col=self.col))
         explosions.append(Explosion(self.x, self.y, col=self.col))
 
         self.explosions = explosions
-        player = vlc.MediaPlayer("explosion.wav")
-        player.play()
+        play_sound("explosion.wav")
         logging.warning(self.explosions)
         self.exploded = True 
         
