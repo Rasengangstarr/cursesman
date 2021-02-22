@@ -1,5 +1,7 @@
 import sys
 import logging
+import pickle
+import socketio
 import random
 import curses
 from curses import wrapper
@@ -9,7 +11,7 @@ import copy
 import threading
 import pyfiglet
 from cursesman.entities import *
-from cursesman.settings import FIDELITY
+from cursesman.settings import *
 from cursesman.rooms import rooms
 from cursesman.utils import loop_sound
 
@@ -19,7 +21,7 @@ logging.basicConfig(filename='main.log', filemode='w', format='%(name)s - %(mess
 def start_screen(stdscr):
     h,w = stdscr.getmaxyx()
     
-    states = ["S", "C", "E"]
+    states = ["S", "C", "M", "E"]
     state = 0
     while True:
         stdscr.erase()
@@ -35,9 +37,14 @@ def start_screen(stdscr):
             stdscr.addstr(16,0,pyfiglet.figlet_format("      CONTINUE", font="standard"))
         
         if state == 2:
-            stdscr.addstr(22,0,pyfiglet.figlet_format("*     EXIT", font="standard")) 
+            stdscr.addstr(22,0,pyfiglet.figlet_format("*     MULTIPLAYER", font="standard")) 
         else:
-            stdscr.addstr(22,0,pyfiglet.figlet_format("      EXIT", font="standard")) 
+            stdscr.addstr(22,0,pyfiglet.figlet_format("      MULTIPLAYER", font="standard")) 
+
+        if state == 3:
+            stdscr.addstr(28,0,pyfiglet.figlet_format("*     EXIT", font="standard")) 
+        else:
+            stdscr.addstr(28,0,pyfiglet.figlet_format("      EXIT", font="standard")) 
         
         stdscr.refresh()
         
@@ -47,9 +54,9 @@ def start_screen(stdscr):
         elif inp in [ord('s'), ord('j')] and state < len(states) - 1:
             state += 1 
         elif inp == ord(' '):
-            if state == 0:
-                return
-            elif state == 2:
+            if state in [0, 2]:
+                return states[state]
+            elif state == 3:
                 quit()
         continue
 
@@ -222,6 +229,7 @@ def event_loop(stdscr):
     currentRoom = 0
     display_room = True
     player = Player(FIDELITY, FIDELITY, col=1)
+    local_player_id = player.uuid
     room = init_room(player, rooms[currentRoom])
         
     lastDrawTime = time.time()
@@ -229,7 +237,22 @@ def event_loop(stdscr):
     room_start = time.time()
     game_over = False
 
-    start_screen(stdscr)
+    state = start_screen(stdscr)
+    multiplayer = state == 'M'
+    # init socket io client if multiplayer
+    if multiplayer:
+        sio = socketio.Client()
+        sio.connect(f'http://{SERVER_ADDRESS}:{SERVER_PORT}')
+        # setup event handlers
+
+        @sio.event
+        def room_server_refresh(data):
+            nonlocal room # ew ew ew lets make it a class?
+            updated_room = pickle.loads(data)
+            updated_room = [e for e in updated_room if e.uuid != local_player_id]
+            updated_room.append(player)
+            room = updated_room
+
     music_thread = loop_sound('chipchoon1.mp3', 35)
 
     if debug_mode:
@@ -237,8 +260,12 @@ def event_loop(stdscr):
         player.bomb_power=5
         player.flamepass = True
         player.wallpass = True
-    
+
+    render_iter = 0 
     while not game_over:
+        if debug_mode:
+            stdscr.addstr(2, 5, str(player.x))
+            stdscr.addstr(2, 10, str(player.y))
         time_remaining = room_time - (time.time() - room_start)
         if display_room:
             generic_screen(stdscr, f'ROOM {currentRoom+1}')
@@ -250,6 +277,8 @@ def event_loop(stdscr):
         enemies = [e for e in room if isinstance(e, Enemy)]
         powerups = [e for e in room if isinstance(e, Powerup)]
         nbombs = len([e for e in room if isinstance(e, Bomb)])
+        players = [e for e in room if isinstance(e, Player) if e.uuid != local_player_id]
+        player_uuids = {p.uuid for p in players}
         
         handle_exploded_bombs(room, player)
 
@@ -258,7 +287,6 @@ def event_loop(stdscr):
                 player.apply_powerup(p.name)
                 player.score += p.score_value
                 p.die()
-
 
         for ene in enemies:
             if is_adjacent(ene, player, dist=0.5):
@@ -287,13 +315,22 @@ def event_loop(stdscr):
         if currentTime >= lastDrawTime + 0.01:
             #reset draw timer
             lastDrawTime = currentTime 
+            render_iter += 1
             stdscr.erase() 
 
             for entity in room:
-                entity.render(stdscr, player.x, player.y)
+                if entity.uuid == local_player_id:
+                    entity.central_render(stdscr, player.x, player.y)
+                else:
+                    col_override = 2 if entity.uuid in player_uuids else None
+                    entity.render(stdscr, player.x, player.y, col_override=col_override)
             for enemy in [e for e in room if isinstance(e, Enemy)]:
                 enemy.act(room)
             stdscr.refresh()
+            
+            if multiplayer and render_iter % 10 == 0:
+                dumps = pickle.dumps(copy.deepcopy(room))
+                sio.emit('room_event', dumps)
 
         
 

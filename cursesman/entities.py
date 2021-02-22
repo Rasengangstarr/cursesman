@@ -10,6 +10,7 @@ import random
 import logging
 import wave
 import math
+import uuid
 
 playerXDraw = 8*FIDELITY
 playerYDraw = 6*FIDELITY
@@ -38,6 +39,7 @@ class Explosive():
 # entities
 class Entity():
     def __init__(self, name, x, y, col=0):
+        self.uuid = uuid.uuid4()
         self.name = name
         self.states = []
         self.x = x
@@ -46,6 +48,7 @@ class Entity():
         self.sprite = Sprite(self.name, self.get_state())
         self.alive = True
         self.flamepass = False
+
     def get_state(self):
         # idle if only idle - else latest state that isnt idle
         if len(self.states) == 0:
@@ -57,7 +60,7 @@ class Entity():
         self.alive = False
 
     #render relative to the player by default
-    def render(self, stdscr, px, py):
+    def render(self, stdscr, px, py, col_override=None):
         h,w = stdscr.getmaxyx()
 
         drawX = self.x+playerXDraw-px
@@ -66,7 +69,8 @@ class Entity():
         if drawX < w-FIDELITY and drawY < h-FIDELITY and drawX > 0 and drawY > 2: # dont overwrite stats
             #print (str(drawX))
             #print (str(drawY))
-            self.sprite.render(stdscr, drawX, drawY, col=self.col)
+            col = self.col if col_override is None else col_override
+            self.sprite.render(stdscr, drawX, drawY, col=col)
 
     def update_state(self, state, animation_time=0.3):
         old_state = self.get_state()
@@ -238,7 +242,7 @@ class Player(Character, Destructable):
         self.lives = 3
         self.score = 0
 
-    def render(self, stdscr, px, py):
+    def central_render(self, stdscr, px, py):
         #always draw the player at the same location
         self.sprite.render(stdscr, playerXDraw, playerYDraw, col=self.col)
 

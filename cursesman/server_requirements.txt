@@ -1,0 +1,2 @@
+tornado==6.1
+python-socketio==5.0.4

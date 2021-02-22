@@ -25,5 +25,6 @@ setuptools.setup(
     ],
     entry_points={
         'console_scripts':
-        ['cursesman=cursesman:main'],
+        ['cursesman=cursesman:main',
+         'cursesman_server=cursesman.server:main'],
     })
