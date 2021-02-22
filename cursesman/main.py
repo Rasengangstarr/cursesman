@@ -53,6 +53,21 @@ def start_screen(stdscr):
                 quit()
         continue
 
+def generic_screen(stdscr, text):
+    h,w = stdscr.getmaxyx()
+    
+    while True:
+        stdscr.erase()
+        
+        stdscr.addstr(h//3,w//3,pyfiglet.figlet_format(text.upper() , font = "standard"))
+        
+        stdscr.refresh()
+        
+        inp = stdscr.getch()
+        if inp == 'q':
+            break
+
+
 def roll_powerup(x, y):
     rnd = random.random()
     if rnd < 0.93:
@@ -158,13 +173,7 @@ def render_stats(player, stdscr, time_remaining):
     stdscr.addstr(1, 25, f'LEFT {int(player.lives)}')
 
 def render_game_over(stdscr):
-    while True:
-        stdscr.clear()
-        stdscr.addstr(20, 20, f'GAME OVER')
-        inp = stdscr.getch()
-        if inp is not None:
-            break
-        stdscr.refresh()
+    generic_screen(stdscr, 'GAME OVER')
 
 def handle_exploded_bombs(room, player):
     unexploded = [b for b in room if isinstance(b, Explosive)and not b.exploded]
@@ -194,10 +203,6 @@ def handle_exploded_bombs(room, player):
                     # handle player
                     if is_adjacent(b.explosions[thisExplosion], player, dist=1) and not player.flamepass:
                         player.die()
-                        logging.warning("ded")
-                        if player.lives < 0:
-                            game_over=True
-                            break
                     # add scores
                     player.score += sum(map(lambda x: x.score_value, filter(lambda x: (isinstance(x, Enemy) and is_adjacent(b.explosions[thisExplosion], x, dist=1)), room)))
                     # remove destructable stuff
@@ -223,7 +228,7 @@ def event_loop(stdscr):
     game_over = False
 
     start_screen(stdscr)
-    loop_sound('chipchoon1.mp3', 35)
+    music_thread = loop_sound('chipchoon1.mp3', 35)
 
     if debug_mode:
         player.max_bombs = 3
@@ -253,10 +258,6 @@ def event_loop(stdscr):
         for ene in enemies:
             if is_adjacent(ene, player, dist=0.5):
                 player.die()
-                if player.lives < 0:
-                    music_player.stop()
-                    game_over=True
-                    break
 
         # deal with doors
         doors = [d for d in room if type(d) == Door]
@@ -267,6 +268,13 @@ def event_loop(stdscr):
                 room = init_room(player,rooms[currentRoom])   
         
         room = [e for e in room if e.alive]
+
+        if player.lives < 0:
+            #music_thread.kill() 
+            music_thread.join()
+            game_over=True
+            render_game_over(stdscr)
+            break
         
         currentTime = time.time()
         #do rendering
@@ -280,6 +288,7 @@ def event_loop(stdscr):
             for enemy in [e for e in room if isinstance(e, Enemy)]:
                 enemy.act(room)
             stdscr.refresh()
+
         
 
         # input logic
@@ -300,7 +309,6 @@ def event_loop(stdscr):
 
 
         player.tick()
-    render_game_over(stdscr)
 
 
 def main():
