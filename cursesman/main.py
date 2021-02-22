@@ -9,12 +9,12 @@ import copy
 import threading
 import pyfiglet
 from cursesman.entities import *
+from cursesman.settings import FIDELITY
 from cursesman.rooms import rooms
 from cursesman.utils import loop_sound
 
 logging.basicConfig(filename='main.log', filemode='w', format='%(name)s - %(message)s')
 #how many characters to use to represent one 'block' in game
-fidelity = 4
 
 def start_screen(stdscr):
     h,w = stdscr.getmaxyx()
@@ -73,25 +73,25 @@ def roll_powerup(x, y):
 def add_static_walls(w,h):
     walls = []
     #borders
-    walls.append(StaticWall(w*4, h*4))
+    walls.append(StaticWall(w*FIDELITY, h*FIDELITY))
     for x in range (0,w):
-        walls.append(StaticWall(x*4,0))
-        walls.append(StaticWall(x*4,h*4))
+        walls.append(StaticWall(x*FIDELITY,0))
+        walls.append(StaticWall(x*FIDELITY,h*FIDELITY))
     for x in range (0,h):
-        walls.append(StaticWall(0,x*4))
-        walls.append(StaticWall(w*4,x*4))
+        walls.append(StaticWall(0,x*FIDELITY))
+        walls.append(StaticWall(w*FIDELITY,x*FIDELITY))
     #checkerboard
     for x in range (1,w-1):
         for y in range (1,h-1):
-            if x*4%8 == 0 and y*4%8 == 0:
-                walls.append(StaticWall(x*4, y*4))
+            if x*FIDELITY%(FIDELITY*2) == 0 and y*FIDELITY%(FIDELITY*2) == 0:
+                walls.append(StaticWall(x*FIDELITY, y*FIDELITY))
     return walls
 
 def add_destructible_walls(w, h):
     walls = []
     doorplaced = False
     #make a quater of the room destructable
-    for _ in range(round((w*h)/4)):
+    for _ in range(round((w*h)/FIDELITY)):
         x = random.randint(2, w-1)
         y = random.randint(2, h-1)
         if x % 2 == 0 and y % 2 == 0:
@@ -99,13 +99,13 @@ def add_destructible_walls(w, h):
         else:
             #drop a door behind the first wall you draw. Powerups could be placed similarly.
             if not doorplaced:
-                walls.append(Door(x*fidelity, y*fidelity))
+                walls.append(Door(x*FIDELITY, y*FIDELITY))
                 doorplaced = True
             else:
-                powerup = roll_powerup(x*fidelity, y*fidelity)
+                powerup = roll_powerup(x*FIDELITY, y*FIDELITY)
                 if powerup is not None:
                     walls.append(powerup)
-            walls.append(DestructibleWall(x*fidelity, y*fidelity))
+            walls.append(DestructibleWall(x*FIDELITY, y*FIDELITY))
 
     return walls
 
@@ -126,14 +126,14 @@ def init_curses(stdscr):
     event_loop(stdscr)
 
 def is_adjacent(a, b, dist=2):
-    return abs(a.x/fidelity - b.x/fidelity) + abs(a.y/fidelity - b.y/fidelity) < dist
+    return abs(a.x/FIDELITY - b.x/FIDELITY) + abs(a.y/FIDELITY - b.y/FIDELITY) < dist
 
 def is_inside(a,b):
     return a.x == b.x and a.y == b.y
 
 def init_room(player, room):
-    player.x = 4
-    player.y = 4
+    player.x = FIDELITY
+    player.y = FIDELITY
 
     return_room = add_destructible_walls(room[1], room[2]) + add_static_walls(room[1], room[2]) + [player]
 
@@ -142,8 +142,8 @@ def init_room(player, room):
             f = copy.deepcopy(e)
 
             if len([en for en in return_room if en.x == f.x and en.y == f.y]) > 0:
-                f.x = random.randint(0, room[1]) * 4
-                f.y = random.randint(0, room[2]) * 4
+                f.x = random.randint(0, room[1]) * FIDELITY
+                f.y = random.randint(0, room[2]) * FIDELITY
                 e = f
             else:
                 return_room.append(f)
@@ -178,10 +178,10 @@ def handle_exploded_bombs(room, player):
         for g in range(0, 4):
             #for each explosion in the group
             for ex in range(0,b.power):
-                thisExplosion = g+ex*4
+                thisExplosion = g+ex*FIDELITY
                 if not any([is_adjacent(b.explosions[thisExplosion], entity, dist=0.75) for entity in indestructableEntities]):
                     #we must make a copy of the explosion at this point, since the bomb it belongs to will need to be destroyed.
-                    logging.warning(str(g+ex*4) + " exploded")
+                    logging.warning(str(g+ex*FIDELITY) + " exploded")
                     explosionInWorld = copy.deepcopy(b.explosions[thisExplosion])
                     explosionInWorld.schedule_for_deletion(0.3)
                     room.append(explosionInWorld)
@@ -214,7 +214,7 @@ def event_loop(stdscr):
     # Clear screen
     debug_mode = len(sys.argv) > 1 and sys.argv[1] == '--debug'
     currentRoom = 0
-    player = Player(4, 4, col=1)
+    player = Player(FIDELITY, FIDELITY, col=1)
     room = init_room(player, rooms[currentRoom])
         
     lastDrawTime = time.time()
