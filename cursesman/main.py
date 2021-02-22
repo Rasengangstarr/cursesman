@@ -53,19 +53,20 @@ def start_screen(stdscr):
                 quit()
         continue
 
-def generic_screen(stdscr, text):
+def generic_screen(stdscr, text, t=2):
     h,w = stdscr.getmaxyx()
+    start = time.time()
     
     while True:
         stdscr.erase()
         
-        stdscr.addstr(h//3,w//3,pyfiglet.figlet_format(text.upper() , font = "standard"))
+        stdscr.addstr(h//2,0,pyfiglet.figlet_format(text.upper() , font = "standard"))
         
         stdscr.refresh()
+
+        if time.time() - start > t:
+            return
         
-        inp = stdscr.getch()
-        if inp == 'q':
-            break
 
 
 def roll_powerup(x, y):
@@ -219,6 +220,7 @@ def event_loop(stdscr):
     # Clear screen
     debug_mode = len(sys.argv) > 1 and sys.argv[1] == '--debug'
     currentRoom = 0
+    display_room = True
     player = Player(FIDELITY, FIDELITY, col=1)
     room = init_room(player, rooms[currentRoom])
         
@@ -238,6 +240,9 @@ def event_loop(stdscr):
     
     while not game_over:
         time_remaining = room_time - (time.time() - room_start)
+        if display_room:
+            generic_screen(stdscr, f'ROOM {currentRoom+1}')
+            display_room = False
         
         render_stats(player, stdscr, time_remaining)
         indestructableEntities = [e for e in room if not isinstance(e, Destructable)]
@@ -266,6 +271,7 @@ def event_loop(stdscr):
                 room_start = time.time()
                 currentRoom += 1
                 room = init_room(player,rooms[currentRoom])   
+                display_room = True
         
         room = [e for e in room if e.alive]
 

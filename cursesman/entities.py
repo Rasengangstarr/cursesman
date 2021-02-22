@@ -271,7 +271,7 @@ class Bomb(Entity, Explosive, Destructable): # Unwalkable
     def explode(self):
         #this way the list is ordered in directional groups, from the inside out.
         logging.warning("power = " + str(self.power))
-        explosions = []
+        explosions = []#[Explosion(self.x, self.y, col=self.col)]
         
         #left explosions
         for p in range (1, self.power+1):
