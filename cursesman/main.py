@@ -282,7 +282,7 @@ def event_loop(stdscr):
             stdscr.addstr(2, 10, str(player.y))
         time_remaining = room_time - (time.time() - room_start)
         if display_room:
-            generic_screen(stdscr, f'ROOM {currentRoom+1}')
+            generic_screen(stdscr, f'     ROOM      {currentRoom+1}')
             display_room = False
         
         render_stats(player, stdscr, time_remaining)
