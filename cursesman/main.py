@@ -183,7 +183,7 @@ def render_stats(player, stdscr, time_remaining):
 def render_game_over(stdscr):
     generic_screen(stdscr, 'GAME OVER')
 
-def handle_exploded_bombs(room, player):
+def handle_exploded_bombs(room, players):
     unexploded = [b for b in room if isinstance(b, Explosive)and not b.exploded]
     explodedBombs = [b for b in room if type(b) == Bomb and b.exploded]
     indestructableEntities = [e for e in room if not isinstance(e, Destructable) and not e.flamepass]
@@ -205,14 +205,15 @@ def handle_exploded_bombs(room, player):
                     for bu in unexploded:
                         if is_adjacent(b.explosions[thisExplosion], bu, dist=0.75):
                             bu.explode()
-                            handle_exploded_bombs(room, player)
+                            handle_exploded_bombs(room, players)
                     
-                    logging.warning("flamepass" + str(player.flamepass))
-                    # handle player
-                    if is_adjacent(b.explosions[thisExplosion], player, dist=1) and not player.flamepass:
-                        player.die()
-                    # add scores
-                    player.score += sum(map(lambda x: x.score_value, filter(lambda x: (isinstance(x, Enemy) and is_adjacent(b.explosions[thisExplosion], x, dist=1)), room)))
+                    # handle players
+                    for p in players:
+                        logging.warning("flamepass" + str(p.flamepass))
+                        if is_adjacent(b.explosions[thisExplosion], p, dist=1) and not p.flamepass:
+                            p.die()
+                        # add scores
+                        p.score += sum(map(lambda x: x.score_value, filter(lambda x: (isinstance(x, Enemy) and is_adjacent(b.explosions[thisExplosion], x, dist=1)), room)))
                     # remove destructable stuff
                     [e.die() for e in room if (isinstance(e, Destructable) and is_adjacent(b.explosions[thisExplosion], e, dist=1))]
             
@@ -228,6 +229,7 @@ def event_loop(stdscr):
     debug_mode = len(sys.argv) > 1 and sys.argv[1] == '--debug'
     currentRoom = 0
     display_room = True
+    master = False
     player = Player(FIDELITY, FIDELITY, col=1)
     local_player_id = player.uuid
     room = init_room(player, rooms[currentRoom])
@@ -249,9 +251,21 @@ def event_loop(stdscr):
         def room_server_refresh(data):
             nonlocal room # ew ew ew lets make it a class?
             updated_room = pickle.loads(data)
-            updated_room = [e for e in updated_room if e.uuid != local_player_id]
-            updated_room.append(player)
+            if master:
+                # only load other player
+                cond = lambda x: x.owner is not None and x.owner != local_player_id
+            else:
+                # also load other deets
+                cond = lambda x: x.owner != local_player_id
+            local = [e for e in room if not cond(e)]
+            updated_room = [e for e in updated_room if cond(e)]
+            updated_room += local
             room = updated_room
+
+        @sio.event
+        def set_master(data):
+            nonlocal master
+            master = True
 
     music_thread = loop_sound('chipchoon1.mp3', 35)
 
@@ -277,20 +291,23 @@ def event_loop(stdscr):
         enemies = [e for e in room if isinstance(e, Enemy)]
         powerups = [e for e in room if isinstance(e, Powerup)]
         nbombs = len([e for e in room if isinstance(e, Bomb)])
-        players = [e for e in room if isinstance(e, Player) if e.uuid != local_player_id]
+        nplayerbombs = len([e for e in room if isinstance(e, Bomb) and e.owner == local_player_id])
+        players = [e for e in room if isinstance(e, Player)]
         player_uuids = {p.uuid for p in players}
         
-        handle_exploded_bombs(room, player)
+        handle_exploded_bombs(room, players)
 
         for p in powerups:
-            if is_inside(p, player):
-                player.apply_powerup(p.name)
-                player.score += p.score_value
-                p.die()
+            for pl in players:
+                if is_inside(p, pl):
+                    pl.apply_powerup(p.name)
+                    pl.score += p.score_value
+                    p.die()
 
         for ene in enemies:
-            if is_adjacent(ene, player, dist=0.5):
-                player.die()
+            for pl in players:
+                if is_adjacent(ene, pl, dist=0.5):
+                    pl.die()
 
         # deal with doors
         doors = [d for d in room if type(d) == Door]
@@ -322,14 +339,18 @@ def event_loop(stdscr):
                 if entity.uuid == local_player_id:
                     entity.central_render(stdscr, player.x, player.y)
                 else:
-                    col_override = 2 if entity.uuid in player_uuids else None
+                    col_override = 2 if entity.owner is not None and entity.owner != local_player_id else None
                     entity.render(stdscr, player.x, player.y, col_override=col_override)
             for enemy in [e for e in room if isinstance(e, Enemy)]:
                 enemy.act(room)
             stdscr.refresh()
             
             if multiplayer and render_iter % 10 == 0:
-                dumps = pickle.dumps(copy.deepcopy(room))
+                if master:
+                    cond = lambda x: x.owner is None or x.owner == local_player_id
+                else:
+                    cond = lambda x: x.owner == local_player_id
+                dumps = pickle.dumps([e for e in room if cond(e)])
                 sio.emit('room_event', dumps)
 
         
@@ -347,8 +368,8 @@ def event_loop(stdscr):
         elif inp in [ord('d'), ord('l')]:
             player.move(player.speed, 0, room)
         elif inp in [ord(' '), ord('e')]:
-            if nbombs < player.max_bombs:
-                room.append(Bomb(player.x, player.y, col=player.col, power=player.bomb_power))
+            if nplayerbombs < player.max_bombs:
+                room.append(Bomb(player.x, player.y, col=player.col, power=player.bomb_power, owner=local_player_id))
 
 
         player.tick()

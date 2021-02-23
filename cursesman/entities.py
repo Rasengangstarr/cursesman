@@ -48,6 +48,7 @@ class Entity():
         self.sprite = Sprite(self.name, self.get_state())
         self.alive = True
         self.flamepass = False
+        self.owner = None
 
     def get_state(self):
         # idle if only idle - else latest state that isnt idle
@@ -241,6 +242,7 @@ class Player(Character, Destructable):
         super().__init__('player', x, y, col=col)
         self.lives = 3
         self.score = 0
+        self.owner = self.uuid
 
     def central_render(self, stdscr, px, py):
         #always draw the player at the same location
@@ -257,13 +259,14 @@ class Player(Character, Destructable):
             pass
 
 class Bomb(Entity, Explosive, Destructable): # Unwalkable
-    def __init__(self, x, y, col=0, power=1):
+    def __init__(self, x, y, col=0, power=1, owner=None):
         super().__init__('bomb', x, y, col=col)
         self.fuse = 3
         self.power = power
         self.exploded = False
         self.burnFuse()
         self.explosions = []
+        self.owner = owner
 
     def burnFuse(self):
         if self.fuse > 0:
@@ -279,10 +282,10 @@ class Bomb(Entity, Explosive, Destructable): # Unwalkable
         
         #left explosions
         for p in range (1, self.power+1):
-            explosions.append(Explosion(self.x-FIDELITY*p, self.y, col=self.col))
-            explosions.append(Explosion(self.x+FIDELITY*p, self.y, col=self.col))
-            explosions.append(Explosion(self.x, self.y-FIDELITY*p, col=self.col))
-            explosions.append(Explosion(self.x, self.y+FIDELITY*p, col=self.col))
+            explosions.append(Explosion(self.x-FIDELITY*p, self.y, col=self.col, owner=self.owner))
+            explosions.append(Explosion(self.x+FIDELITY*p, self.y, col=self.col, owner=self.owner))
+            explosions.append(Explosion(self.x, self.y-FIDELITY*p, col=self.col, owner=self.owner))
+            explosions.append(Explosion(self.x, self.y+FIDELITY*p, col=self.col, owner=self.owner))
         explosions.append(Explosion(self.x, self.y, col=self.col))
 
         self.explosions = explosions
@@ -291,8 +294,10 @@ class Bomb(Entity, Explosive, Destructable): # Unwalkable
         self.exploded = True 
         
 class Explosion(Entity):
-    def __init__(self, x, y, col=0):
+    def __init__(self, x, y, col=0, owner=None):
         super().__init__('explosion', x, y, col=col)
+        self.owner = owner
+
     def schedule_for_deletion(self, timer):
         threading.Timer(timer, self.die).start()
 
