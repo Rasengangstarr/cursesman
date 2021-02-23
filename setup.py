@@ -15,7 +15,9 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=[
         'pyfiglet==0.8.post1',
-        'playsound==1.2.2'
+        'playsound==1.2.2',
+        'tornado==6.1',
+        'python-socketio==5.0.4'
     ],
     python_requires='>=3.6',
     classifiers=[
@@ -25,5 +27,6 @@ setuptools.setup(
     ],
     entry_points={
         'console_scripts':
-        ['cursesman=cursesman:main'],
+        ['cursesman=cursesman:main',
+         'cursesman_server=cursesman.server:main'],
     })

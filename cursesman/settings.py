@@ -11,3 +11,7 @@ MUSIC_DIR = ROOT_DIR / 'music'
 
 FIDELITY = 4
 
+
+# netcode stuff
+SERVER_ADDRESS = 'localhost'
+SERVER_PORT = 12321

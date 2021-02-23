@@ -1,2 +1,4 @@
 pyfiglet==0.8.post1
 playsound==1.2.2
+tornado==6.1
+python-socketio==5.0.4
