@@ -113,6 +113,13 @@ class Character(Entity):
         self.bombpass = False
         self.flamepass = False
 
+    def changeDirectionAimlessly(self):
+        threading.Timer(1.0, self.changeDirectionAimlessly).start()
+        self.changeDirection()
+
+    def changeDirection(self):
+        self.direction = random.randint(0,4) 
+    
     def check_can_move(self, x, y, walls):
         # apply powerups
         if self.wallpass:
@@ -170,9 +177,9 @@ class Character(Entity):
     def get_path_to_target(self, target, room):
         world = np.ones((21, 15))
         for e in [r for r in room if isinstance(r,Entity) and isinstance(r,Unwalkable)]:
-            world[int(e.x/4),int(e.y/4)] = 1000
+            world[int(e.x/FIDELITY),int(e.y/FIDELITY)] = 1000
         world = world.astype(np.float32) 
-        path = pyastar.astar_path(world, (int(self.x/4), int(self.y/4)), (round(target.x/4), round(target.y/4)), allow_diagonal=False)
+        path = pyastar.astar_path(world, (int(self.x/FIDELITY), int(self.y/FIDELITY)), (round(target.x/FIDELITY), round(target.y/FIDELITY)), allow_diagonal=False)
         
         return path
 
@@ -180,26 +187,11 @@ class Enemy(Character, Destructable):
     def __init__(self, name, x, y, col=0):
         super().__init__(name, x, y, col=col)
         self.score_value = 100
-
-    def act(self,room): pass
-
-#The Balloom seems to float around randomly
-class Balloom(Enemy):
-    def __init__(self, x, y, col=2):
-        super().__init__('balloom', x, y, col=col)
-        self.speed = 0.05
-        #TODD this should be whatever python calls an enum
         self.direction = 1
-        self.changeDirectionAimlessly()
+        self.target_x = -1
+        self.target_y = -1
 
-    def changeDirectionAimlessly(self):
-        threading.Timer(1.0, self.changeDirectionAimlessly).start()
-        self.changeDirection()
-
-    def changeDirection(self):
-        self.direction = random.randint(0,4) 
-
-    def act(self, room):
+    def act_dumb(self,room) :
         original_xy = (self.x, self.y)
         if self.direction == 0:
             self.move(-self.speed, 0, room)
@@ -211,27 +203,8 @@ class Balloom(Enemy):
             self.move(0, self.speed, room)
         if original_xy == (self.x, self.y):
             self.changeDirection()
-
-#The Balloom seems to float around randomly
-class Oneil(Enemy):
-    def __init__(self, x, y, col=1):
-        super().__init__('oneil', x, y, col=col)
-        self.speed = 0.1
-        #TODD this should be whatever python calls an enum
-        self.direction = 1
-        self.changeDirectionAimlessly()
-        self.target_x = -1
-        self.target_y = -1
-        self.wallpass = True
-
-    def changeDirectionAimlessly(self):
-        threading.Timer(1.0, self.changeDirectionAimlessly).start()
-        self.changeDirection()
-
-    def changeDirection(self):
-        self.direction = random.randint(0,4) 
-
-    def act(self, room):
+        
+    def act_smart(self,room):
         players = [e for e in room if type(e) == Player]
         player_to_home = None
         homing_player = False
@@ -258,26 +231,46 @@ class Oneil(Enemy):
             self.target_x = new_target[0]*FIDELITY
             self.target_y = new_target[1]*FIDELITY
         else:
-            #logging.warning(str(self.target_x))
-            #logging.warning(str(self.target_y))
-            logging.warning(str(self.x))
-            logging.warning(str(self.y))
-
             if self.x < self.target_x:
                 self.move_regardless(self.speed, 0, room)
-                #logging.warning("TRYING TO MOVE RIGHT") 
             elif self.x > self.target_x:
-                #logging.warning("TRYING TO MOVE LEFT")
                 self.move_regardless(-self.speed, 0, room)
             elif self.y < self.target_y:
-                #logging.warning("TRYING TO MOVE DOWN")
                 self.move_regardless(0, self.speed, room)
             elif self.y > self.target_y:
-                #logging.warning("TRYING TO MOVE UP")
                 self.move_regardless(0, -self.speed, room)
             else:
                 self.target_x = -1
                 self.target_y = -1
+
+    def act(self,room): pass
+
+class Balloom(Enemy):
+    def __init__(self, x, y, col=2):
+        super().__init__('balloom', x, y, col=col)
+        self.speed = 0.05
+        self.changeDirectionAimlessly()
+
+    def act(self, room):
+        self.act_dumb(room)
+
+class Oneil(Enemy):
+    def __init__(self, x, y, col=1):
+        super().__init__('oneil', x, y, col=col)
+        self.speed = 0.1
+        self.changeDirectionAimlessly()
+
+    def act(self, room):
+        self.act_smart(room)
+
+class Doll(Enemy):
+    def __init__(self, x, y, col=1):
+        super().__init__('doll', x, y, col=col)
+        self.speed = 0.1
+        self.changeDirectionAimlessly()
+
+    def act(self, room):
+        self.act_dumb(room)
 
 class Player(Character, Destructable):
     def __init__(self, x, y, col=1):
