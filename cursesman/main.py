@@ -66,15 +66,10 @@ def generic_screen(stdscr, text, t=2):
     
     while True:
         stdscr.erase()
-        
         stdscr.addstr(h//2,0,pyfiglet.figlet_format(text.upper() , font = "standard"))
-        
         stdscr.refresh()
-
         if time.time() - start > t:
             return
-        
-
 
 def roll_powerup(x, y):
     rnd = random.random()
@@ -110,7 +105,7 @@ def add_static_walls(w,h):
                 walls.append(StaticWall(x*FIDELITY, y*FIDELITY))
     return walls
 
-def add_destructible_walls(w, h):
+def place_room_entities(w, h, p):
     walls = []
     doorplaced = False
     #make a quater of the room destructable
@@ -125,9 +120,9 @@ def add_destructible_walls(w, h):
                 walls.append(Door(x*FIDELITY, y*FIDELITY))
                 doorplaced = True
             else:
-                powerup = roll_powerup(x*FIDELITY, y*FIDELITY)
-                if powerup is not None:
-                    walls.append(powerup)
+                p.x = x
+                p.y = y
+                walls.append(p)
             walls.append(DestructibleWall(x*FIDELITY, y*FIDELITY))
 
     return walls
@@ -158,7 +153,7 @@ def init_room(player, room):
     player.x = FIDELITY
     player.y = FIDELITY
 
-    return_room = add_destructible_walls(room[1], room[2]) + add_static_walls(room[1], room[2]) + [player]
+    return_room = place_room_entities(room[1], room[2], room[4]) + add_static_walls(room[1], room[2]) + [player]
 
     for e in room[3]:
         while True:
@@ -227,7 +222,7 @@ def handle_exploded_bombs(room, players):
 def event_loop(stdscr):
     # Clear screen
     debug_mode = len(sys.argv) > 1 and sys.argv[1] == '--debug'
-    currentRoom = 0
+    currentRoom = 1
     display_room = True
     master = False
     player = Player(FIDELITY, FIDELITY, col=1)
