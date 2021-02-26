@@ -140,7 +140,8 @@ def init_curses(stdscr):
     curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
     curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
     curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
-
+    curses.init_pair(4, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
+    
     event_loop(stdscr)
 
 def is_adjacent(a, b, dist=2):
@@ -222,7 +223,7 @@ def handle_exploded_bombs(room, players):
 def event_loop(stdscr):
     # Clear screen
     debug_mode = len(sys.argv) > 1 and sys.argv[1] == '--debug'
-    currentRoom = 0
+    currentRoom = 1
     display_room = True
     master = False
     player = Player(FIDELITY, FIDELITY, col=1)

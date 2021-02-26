@@ -264,7 +264,7 @@ class Oneil(Enemy):
         self.act_smart(room)
 
 class Doll(Enemy):
-    def __init__(self, x, y, col=1):
+    def __init__(self, x, y, col=4):
         super().__init__('doll', x, y, col=col)
         self.speed = 0.1
         self.changeDirectionAimlessly()
