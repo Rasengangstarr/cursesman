@@ -1,4 +1,10 @@
-pyfiglet==0.8.post1
+bidict==0.21.2
+imageio==2.8.0
+numpy==1.18.4
+Pillow==8.1.0
 playsound==1.2.2
-tornado==6.1
+pyastar==0.0.1
+pyfiglet==0.8.post1
+python-engineio==4.0.0
 python-socketio==5.0.4
+python-vlc==3.0.11115
