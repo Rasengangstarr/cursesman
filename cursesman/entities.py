@@ -129,7 +129,11 @@ class Character(Entity):
 
         for wall in walls:
             if math.floor(x) > wall.x-FIDELITY and math.floor(x) < wall.x+FIDELITY and math.floor(y) > wall.y-FIDELITY and math.floor(y) < wall.y+FIDELITY:
-                return False
+            #if already inside the wall
+                if math.floor(self.x) > wall.x-FIDELITY and math.floor(self.x) < wall.x+FIDELITY and math.floor(self.y) > wall.y-FIDELITY and math.floor(self.y) < wall.y+FIDELITY: 
+                    continue
+                else:
+                    return False
         return True
 
     def move(self, dx, dy, room):
@@ -190,6 +194,7 @@ class Enemy(Character, Destructable):
         self.direction = 1
         self.target_x = -1
         self.target_y = -1
+        self.view_radius = 0
 
     def act_dumb(self,room) :
         original_xy = (self.x, self.y)
@@ -211,7 +216,7 @@ class Enemy(Character, Destructable):
         self.x = round(self.x, 3)
         self.y = round(self.y, 3)
         for p in players:
-            if (((p.x-self.x)**2+(p.y-self.y)**2) ** 0.5) <= 1000:
+            if (((p.x-self.x)**2+(p.y-self.y)**2) ** 0.5) <= self.view_radius:
                 homing_player = True
                 player_to_home = p
         if homing_player == False:
@@ -250,13 +255,14 @@ class Balloom(Enemy):
         super().__init__('balloom', x, y, col=col)
         self.speed = 0.05
         self.changeDirectionAimlessly()
-
+        self.view_radius = 0;
     def act(self, room):
         self.act_dumb(room)
 
 class Oneil(Enemy):
     def __init__(self, x, y, col=1):
         super().__init__('oneil', x, y, col=col)
+        self.view_radius = 20
         self.speed = 0.1
         self.changeDirectionAimlessly()
 
@@ -267,19 +273,32 @@ class Doll(Enemy):
     def __init__(self, x, y, col=4):
         super().__init__('doll', x, y, col=col)
         self.speed = 0.1
+        self.view_radius = 0
         self.changeDirectionAimlessly()
 
     def act(self, room):
         self.act_dumb(room)
+
+class Ovapi(Enemy):
+    def __init__(self, x, y, col=1):
+        super().__init__('ovapi', x, y, col=col)
+        self.speed = 0.05
+        self.view_radius = 20
+        self.changeDirectionAimlessly()
+
+    def act(self, room):
+        self.act_smart(room)
 
 class Pass(Enemy):
     def __init__(self, x, y, col=1):
         super().__init__('pass', x, y, col=col)
-        self.speed = 0.1
+        self.speed = 0.15
+        self.view_radius = 40 
         self.changeDirectionAimlessly()
 
     def act(self, room):
-        self.act_dumb(room)
+        self.act_smart(room)
+
 
 class Player(Character, Destructable):
     def __init__(self, x, y, col=1):
@@ -302,7 +321,7 @@ class Player(Character, Destructable):
             # game over
             pass
 
-class Bomb(Entity, Explosive, Destructable): # Unwalkable
+class Bomb(Entity, Unwalkable, Explosive, Destructable): # Unwalkable
     def __init__(self, x, y, col=0, power=1, owner=None):
         super().__init__('bomb', x, y, col=col)
         self.fuse = 3
