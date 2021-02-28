@@ -281,7 +281,7 @@ class Doll(Enemy):
 
 class Ovapi(Enemy):
     def __init__(self, x, y, col=1):
-        super().__init__('pass', x, y, col=col)
+        super().__init__('ovapi', x, y, col=col)
         self.speed = 0.05
         self.view_radius = 20
         self.changeDirectionAimlessly()
