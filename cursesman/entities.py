@@ -129,7 +129,11 @@ class Character(Entity):
 
         for wall in walls:
             if math.floor(x) > wall.x-FIDELITY and math.floor(x) < wall.x+FIDELITY and math.floor(y) > wall.y-FIDELITY and math.floor(y) < wall.y+FIDELITY:
-                return False
+            #if already inside the wall
+                if math.floor(self.x) > wall.x-FIDELITY and math.floor(self.x) < wall.x+FIDELITY and math.floor(self.y) > wall.y-FIDELITY and math.floor(self.y) < wall.y+FIDELITY: 
+                    continue
+                else:
+                    return False
         return True
 
     def move(self, dx, dy, room):
@@ -317,7 +321,7 @@ class Player(Character, Destructable):
             # game over
             pass
 
-class Bomb(Entity, Explosive, Destructable): # Unwalkable
+class Bomb(Entity, Unwalkable, Explosive, Destructable): # Unwalkable
     def __init__(self, x, y, col=0, power=1, owner=None):
         super().__init__('bomb', x, y, col=col)
         self.fuse = 3

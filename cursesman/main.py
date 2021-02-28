@@ -71,6 +71,7 @@ def generic_screen(stdscr, text, t=2):
         if time.time() - start > t:
             return
 
+#obselete
 def roll_powerup(x, y):
     rnd = random.random()
     if rnd < 0.93:
@@ -156,13 +157,14 @@ def init_room(player, room):
 
     return_room = place_room_entities(room[1], room[2], room[4]) + add_static_walls(room[1], room[2]) + [player]
 
+    #enemies
     for e in room[3]:
         while True:
             f = copy.deepcopy(e)
 
             if len([en for en in return_room if en.x == f.x and en.y == f.y]) > 0:
-                f.x = random.randint(0, room[1]) * FIDELITY
-                f.y = random.randint(0, room[2]) * FIDELITY
+                f.x = random.randint(6, room[1]) * FIDELITY
+                f.y = random.randint(6, room[2]) * FIDELITY
                 e = f
             else:
                 return_room.append(f)
@@ -223,7 +225,7 @@ def handle_exploded_bombs(room, players):
 def event_loop(stdscr):
     # Clear screen
     debug_mode = len(sys.argv) > 1 and sys.argv[1] == '--debug'
-    currentRoom = 0
+    currentRoom = 1
     display_room = True
     master = False
     player = Player(FIDELITY, FIDELITY, col=1)
@@ -278,7 +280,7 @@ def event_loop(stdscr):
             stdscr.addstr(2, 10, str(player.y))
         time_remaining = room_time - (time.time() - room_start)
         if display_room:
-            generic_screen(stdscr, f'     ROOM      {currentRoom+1}')
+            generic_screen(stdscr, f'     ROOM      {currentRoom}')
             display_room = False
         
         render_stats(player, stdscr, time_remaining)
