@@ -225,7 +225,7 @@ def handle_exploded_bombs(room, players):
 def event_loop(stdscr):
     # Clear screen
     debug_mode = len(sys.argv) > 1 and sys.argv[1] == '--debug'
-    currentRoom = 1
+    currentRoom = 0
     display_room = True
     master = False
     player = Player(FIDELITY, FIDELITY, col=1)
