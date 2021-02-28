@@ -254,8 +254,9 @@ class Balloom(Enemy):
     def __init__(self, x, y, col=2):
         super().__init__('balloom', x, y, col=col)
         self.speed = 0.05
+        self.view_radius = 0
+        self.points = 100
         self.changeDirectionAimlessly()
-        self.view_radius = 0;
     def act(self, room):
         self.act_dumb(room)
 
@@ -264,6 +265,7 @@ class Oneil(Enemy):
         super().__init__('oneil', x, y, col=col)
         self.view_radius = 20
         self.speed = 0.1
+        self.points = 200
         self.changeDirectionAimlessly()
 
     def act(self, room):
@@ -274,16 +276,42 @@ class Doll(Enemy):
         super().__init__('doll', x, y, col=col)
         self.speed = 0.1
         self.view_radius = 0
+        self.points = 400
         self.changeDirectionAimlessly()
 
     def act(self, room):
         self.act_dumb(room)
 
+class Minvo(Enemy):
+    def __init__(self, x, y, col=4):
+        super().__init__('minvo', x, y, col=col)
+        self.speed = 0.15
+        self.view_radius = 20
+        self.points = 800
+        self.changeDirectionAimlessly()
+
+    def act(self, room):
+        self.act_smart(room)
+
+#TODO, this enemy should be able to pass through destructable walls
+class Kondoria(Enemy):
+    def __init__(self, x, y, col=4):
+        super().__init__('kondoria', x, y, col=col)
+        self.speed = 0.025
+        self.view_radius = 40
+        self.points = 1000
+        self.changeDirectionAimlessly()
+
+    def act(self, room):
+        self.act_smart(room)
+
+#TODO, this enemy should be able to pass through destructable walls
 class Ovapi(Enemy):
     def __init__(self, x, y, col=1):
         super().__init__('ovapi', x, y, col=col)
         self.speed = 0.05
         self.view_radius = 20
+        self.points = 2000
         self.changeDirectionAimlessly()
 
     def act(self, room):
@@ -293,7 +321,20 @@ class Pass(Enemy):
     def __init__(self, x, y, col=1):
         super().__init__('pass', x, y, col=col)
         self.speed = 0.15
-        self.view_radius = 40 
+        self.view_radius = 40
+        self.points = 4000
+        self.changeDirectionAimlessly()
+
+    def act(self, room):
+        self.act_smart(room)
+
+#TODO, this enemy should be able to pass through destructable walls
+class Pontan(Enemy):
+    def __init__(self, x, y, col=1):
+        super().__init__('pontan', x, y, col=col)
+        self.speed = 0.15
+        self.view_radius = 40
+        self.points = 4000
         self.changeDirectionAimlessly()
 
     def act(self, room):
