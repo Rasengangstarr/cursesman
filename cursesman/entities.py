@@ -285,7 +285,7 @@ class Doll(Enemy):
 class Minvo(Enemy):
     def __init__(self, x, y, col=4):
         super().__init__('minvo', x, y, col=col)
-        self.speed = 0.15
+        self.speed = 0.2
         self.view_radius = 20
         self.points = 800
         self.changeDirectionAimlessly()
@@ -320,7 +320,7 @@ class Ovapi(Enemy):
 class Pass(Enemy):
     def __init__(self, x, y, col=1):
         super().__init__('pass', x, y, col=col)
-        self.speed = 0.15
+        self.speed = 0.2
         self.view_radius = 40
         self.points = 4000
         self.changeDirectionAimlessly()
@@ -332,7 +332,7 @@ class Pass(Enemy):
 class Pontan(Enemy):
     def __init__(self, x, y, col=1):
         super().__init__('pontan', x, y, col=col)
-        self.speed = 0.15
+        self.speed = 0.2
         self.view_radius = 40
         self.points = 4000
         self.changeDirectionAimlessly()
