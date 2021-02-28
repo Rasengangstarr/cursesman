@@ -120,8 +120,8 @@ def place_room_entities(w, h, p):
                 walls.append(Door(x*FIDELITY, y*FIDELITY))
                 doorplaced = True
             else:
-                p.x = x
-                p.y = y
+                p.x = x*FIDELITY
+                p.y = y*FIDELITY
                 walls.append(p)
             walls.append(DestructibleWall(x*FIDELITY, y*FIDELITY))
 
