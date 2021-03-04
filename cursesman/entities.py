@@ -51,6 +51,7 @@ class Entity():
         self.alive = True
         self.flamepass = False
         self.owner = None
+        self.original_owner = None
 
     def get_state(self):
         # idle if only idle - else latest state that isnt idle
@@ -371,15 +372,16 @@ class Bomb(Entity, Unwalkable, Explosive, Destructable): # Unwalkable
         self.burnFuse()
         self.explosions = []
         self.owner = owner
+        self.original_owner = owner
 
-    def burnFuse(self):
+    def burnFuse(self, quiet=False):
         if self.fuse > 0:
             self.fuse -= 1
-            threading.Timer(1.0, self.burnFuse).start()
+            threading.Timer(1.0, self.burnFuse, [], {'quiet': quiet}).start()
         else:
-            self.explode()
+            self.explode(quiet=quiet)
 
-    def explode(self):
+    def explode(self, quiet=False):
         #this way the list is ordered in directional groups, from the inside out.
         logging.warning("power = " + str(self.power))
         explosions = []#[Explosion(self.x, self.y, col=self.col)]
@@ -393,7 +395,8 @@ class Bomb(Entity, Unwalkable, Explosive, Destructable): # Unwalkable
         explosions.append(Explosion(self.x, self.y, col=self.col))
 
         self.explosions = explosions
-        play_sound("explosion.wav")
+        if not quiet:
+            play_sound("explosion.wav")
         logging.warning(self.explosions)
         self.exploded = True 
         

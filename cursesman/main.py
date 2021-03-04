@@ -203,7 +203,7 @@ def handle_exploded_bombs(room, players):
                     for bu in unexploded:
                         if is_adjacent(b.explosions[thisExplosion], bu, dist=0.75):
                             bu.explode()
-                            handle_exploded_bombs(room, players)
+                            room = handle_exploded_bombs(room, players)
                     
                     # handle players
                     for p in players:
@@ -221,6 +221,7 @@ def handle_exploded_bombs(room, players):
                     break
         #the bomb is spent, so get rid of it
         b.die()
+    return room
 
 def event_loop(stdscr):
     # Clear screen
@@ -249,14 +250,14 @@ def event_loop(stdscr):
         def room_server_refresh(data):
             nonlocal room # ew ew ew lets make it a class?
             updated_room = pickle.loads(data)
-            if master:
-                # only load other player
-                cond = lambda x: x.owner is not None and x.owner != local_player_id
-            else:
-                # also load other deets
-                cond = lambda x: x.owner != local_player_id
+            # filter anything owned by the player
+            cond = lambda x: x.owner != local_player_id
             local = [e for e in room if not cond(e)]
             updated_room = [e for e in updated_room if cond(e)]
+            # for any objects that are duplicated we should take the updated version
+            updated_uuids = {e.uuid for e in updated_room}
+            local = [e for e in local if e.uuid not in updated_uuids]
+            # apply
             updated_room += local
             room = updated_room
 
@@ -289,11 +290,13 @@ def event_loop(stdscr):
         enemies = [e for e in room if isinstance(e, Enemy)]
         powerups = [e for e in room if isinstance(e, Powerup)]
         nbombs = len([e for e in room if isinstance(e, Bomb)])
-        nplayerbombs = len([e for e in room if isinstance(e, Bomb) and e.owner == local_player_id])
+        nplayerbombs = len([e for e in room if isinstance(e, Bomb) and e.original_owner == local_player_id])
         players = [e for e in room if isinstance(e, Player)]
         player_uuids = {p.uuid for p in players}
         
-        handle_exploded_bombs(room, players)
+        if not multiplayer:
+            handle_exploded_bombs(room, players)
+
 
         for p in powerups:
             for pl in players:
