@@ -250,6 +250,12 @@ def event_loop(stdscr):
         def room_server_refresh(data):
             nonlocal room # ew ew ew lets make it a class?
             updated_room = pickle.loads(data)
+            # get the player on both local and remote rooms
+            local_player = [e for e in room if e.uuid == local_player_id][0]
+            try:
+                remote_player = [e for e in updated_room if e.uuid == local_player_id][0]
+            except IndexError as e:
+                remote_player = local_player
             # filter anything owned by the player
             cond = lambda x: x.owner != local_player_id
             local = [e for e in room if not cond(e)]
@@ -257,6 +263,10 @@ def event_loop(stdscr):
             # for any objects that are duplicated we should take the updated version
             updated_uuids = {e.uuid for e in updated_room}
             local = [e for e in local if e.uuid not in updated_uuids]
+            # handle player death
+            if local_player.lives == remote_player.lives + 1:
+                # player has died
+                player.die()
             # apply
             updated_room += local
             room = updated_room
@@ -321,8 +331,10 @@ def event_loop(stdscr):
         
         room = [e for e in room if e.alive]
 
-        if player.lives < 0:
+        if player.lives <= 0:
             #music_thread.kill() 
+            if multiplayer:
+                sio.disconnect()
             music_thread.join()
             game_over=True
             render_game_over(stdscr)
