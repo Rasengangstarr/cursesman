@@ -11,8 +11,7 @@ import logging
 import wave
 import math
 import uuid
-import numpy as np
-import pyastar
+from astar_python.astar import Astar
 
 playerXDraw = 8*FIDELITY
 playerYDraw = 6*FIDELITY
@@ -179,11 +178,11 @@ class Character(Entity):
         setattr(self, powerup_field, powerup_func(getattr(self, powerup_field)))
         
     def get_path_to_target(self, target, room):
-        world = np.ones((21, 15))
+        world = [[0 for i in range(21)] for j in range(15)]  
         for e in [r for r in room if isinstance(r,Entity) and isinstance(r,Unwalkable)]:
-            world[int(e.x/FIDELITY),int(e.y/FIDELITY)] = 1000
-        world = world.astype(np.float32) 
-        path = pyastar.astar_path(world, (int(self.x/FIDELITY), int(self.y/FIDELITY)), (round(target.x/FIDELITY), round(target.y/FIDELITY)), allow_diagonal=False)
+            world[int(e.y/FIDELITY)][int(e.x/FIDELITY)] = None 
+        astar = Astar(world)
+        path = astar.run([int(self.x/FIDELITY), int(self.y/FIDELITY)], [round(target.x/FIDELITY), round(target.y/FIDELITY)], allow_diagonals=False)
         
         return path
 
@@ -232,9 +231,11 @@ class Enemy(Character, Destructable):
             if original_xy == (self.x, self.y):
                 self.changeDirection()
         elif self.target_x == -1 and self.target_y == -1:
-            new_target = self.get_path_to_target(player_to_home, room)[1]
-            self.target_x = new_target[0]*FIDELITY
-            self.target_y = new_target[1]*FIDELITY
+            new_targets = self.get_path_to_target(player_to_home, room)
+            if new_targets is not None and len(new_targets) > 0:
+                new_target = new_targets[1]
+                self.target_x = new_target[0]*FIDELITY
+                self.target_y = new_target[1]*FIDELITY
         else:
             if self.x < self.target_x:
                 self.move_regardless(self.speed, 0, room)
