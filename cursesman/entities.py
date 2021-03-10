@@ -178,7 +178,7 @@ class Character(Entity):
         setattr(self, powerup_field, powerup_func(getattr(self, powerup_field)))
         
     def get_path_to_target(self, target, room):
-        world = arr = [[0 for i in range(21)] for j in range(15)]  
+        world = [[0 for i in range(21)] for j in range(15)]  
         for e in [r for r in room if isinstance(r,Entity) and isinstance(r,Unwalkable)]:
             world[int(e.y/FIDELITY)][int(e.x/FIDELITY)] = None 
         astar = Astar(world)
