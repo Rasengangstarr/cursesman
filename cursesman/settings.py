@@ -13,5 +13,5 @@ FIDELITY = 4
 
 
 # netcode stuff
-SERVER_ADDRESS = od.environ.get('CURSESMAN_SERVER_ADDRESS', 'localhost') # load from environment var if set
+SERVER_ADDRESS = os.environ.get('CURSESMAN_SERVER_ADDRESS', 'localhost') # load from environment var if set
 SERVER_PORT = 12321
