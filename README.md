@@ -34,5 +34,5 @@ Terminology and Concepts:
 * MVP - 3
   * Proper end screen
   * Define all the levels
-  * Add the second enemy type
+  * Add the second enemy type - working
   * Networking and multiplayer features - we can expand on this when we get there.
