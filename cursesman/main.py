@@ -151,11 +151,12 @@ def is_adjacent(a, b, dist=2):
 def is_inside(a,b):
     return a.x == b.x and a.y == b.y
 
-def init_room(player, room):
-    player.x = FIDELITY
-    player.y = FIDELITY
+def init_room(players, room):
+    for player in players:
+        player.x = FIDELITY
+        player.y = FIDELITY
 
-    return_room = place_room_entities(room[1], room[2], room[4]) + add_static_walls(room[1], room[2]) + [player]
+    return_room = place_room_entities(room[1], room[2], room[4]) + add_static_walls(room[1], room[2]) + players
 
     #enemies
     for e in room[3]:
@@ -187,7 +188,6 @@ def handle_exploded_bombs(room, players):
     indestructableEntities = [e for e in room if not isinstance(e, Destructable) and not e.flamepass]
     
     for b in explodedBombs:
-        logging.warning("roo")
        
         #for each directional group of explosions
         for g in range(0, 4):
@@ -254,7 +254,7 @@ def handle_doors(room, currentRoom, room_start):
         if is_inside(player, d):
             room_start = time.time()
             currentRoom += 1
-            room = init_room(player, rooms[currentRoom])   
+            room = init_room(players, rooms[currentRoom])   
             display_room = True
     return currentRoom, display_room, room_start, room
 
@@ -264,7 +264,6 @@ def event_loop(stdscr):
     debug_mode = len(sys.argv) > 1 and sys.argv[1] == '--debug'
     currentRoom = 0
     display_room = True
-    master = False
     player = Player(FIDELITY, FIDELITY, col=1)
     local_player_id = player.uuid
         
@@ -277,7 +276,9 @@ def event_loop(stdscr):
     multiplayer = state == 'M'
 
     if not multiplayer:
-        room = init_room(player, rooms[currentRoom])
+        room = init_room([player], rooms[currentRoom])
+    else:
+        room = []
 
     # init socket io client if multiplayer
     if multiplayer:
@@ -287,6 +288,10 @@ def event_loop(stdscr):
 
         @sio.event
         def room_server_refresh(data):
+            # TODO: probably need to rewrite this
+            # only the player should be handled by the client
+            # deaths and stuff will occur on the server so need to be reflected
+            # other than this the player shouldnt change
             nonlocal room # ew ew ew lets make it a class?
             updated_room = pickle.loads(data)
             # get the player on both local and remote rooms
@@ -311,14 +316,11 @@ def event_loop(stdscr):
             room = updated_room
 
         @sio.event
-        def set_master(data):
-            nonlocal master
-            master = True
-
-        @sio.event
         def init_room_from_server(data):
             nonlocal room
             room = pickle.loads(data)
+            room += [player]
+
 
     music_thread = loop_sound('chipchoon1.mp3', 35)
 
@@ -385,10 +387,7 @@ def event_loop(stdscr):
             stdscr.refresh()
             
             if multiplayer and render_iter % 10 == 0:
-                if master:
-                    cond = lambda x: x.owner is None or x.owner == local_player_id
-                else:
-                    cond = lambda x: x.owner == local_player_id
+                cond = lambda x: x.owner == local_player_id
                 dumps = pickle.dumps([e for e in room if cond(e)])
                 sio.emit('room_event', dumps)
 

@@ -1,6 +1,7 @@
 from cursesman.entities import *
 from cursesman.settings import SERVER_PORT
-from cursesman.main import handle_exploded_bombs
+from cursesman.main import *
+from cursesman.rooms import rooms
 
 import asyncio
 import socketio
@@ -13,18 +14,22 @@ SERVER_UUID = str(uuid.uuid4())
 class CursesmanServer():
     def __init__(self):
         self.room = []
+        self.current_room = 0
 
-    def update_room(self, update, master):
+    def init_room(self):
+        self.room = init_room([], rooms[self.current_room])
+
+    def destroy_game(self):
+        self.room = []
+        self.current_room = 0
+
+    def update_room(self, update):
         if self.room == []:
             self.room = update
         else:
-            # check if we are dealing with master or not
             client_uuid = [e.uuid for e in update if isinstance(e, Player)][0]
             # figure out what not to change
-            if master:
-                cond = lambda x: x.owner is not None and x.owner != client_uuid
-            else:
-                cond = lambda x: x.owner != client_uuid
+            cond = lambda x: x.owner != client_uuid
             unchanged_room = [e for e in self.room if cond(e)]
             # for the update, we should claim ownership of any bombs
             for b in [e for e in update if isinstance(e, Bomb) or isinstance(e, Explosion)]:
@@ -38,8 +43,11 @@ class CursesmanServer():
 
             players = [e for e in self.room if isinstance(e, Player)]
 
-            # now deal with big boombinies
+            # now deal with interactions
             handle_exploded_bombs(self.room, players)
+            handle_powerups(self.room)
+            handle_enemies(self.room)
+            self.current_room, _, _, self.room = handle_doors(self.room, self.current_room, None)
             # remove dead stuff
             self.room = [e for e in self.room if e.alive]
 
@@ -55,7 +63,6 @@ class CursesmanServer():
 
 cursesman_server = CursesmanServer()
 sids = []
-master_sid = None
 
 sio = socketio.AsyncServer(async_mode='tornado')
 
@@ -71,38 +78,32 @@ async def room_event(sid, data):
     cursesman_server.stats()
     room = pickle.loads(data)
     # resolve conflicts
-    cursesman_server.update_room(room, sid == master_sid)
+    cursesman_server.update_room(room)
     # broadcast
     await sio.emit('room_server_refresh', pickle.dumps(cursesman_server.room))
 
 @sio.event
 async def connect(sid, environ, *args, **kwargs):
     global sids
-    global master_sid
+    print('connect ', sid)
     sids.append(sid)
     if len(sids) == 1:
-        await sio.emit('set_master', '', room=sid)
-        master_sid = sid
-        print('master set to ' + sid)
+        # init the room
+        cursesman_server.init_room()
+        await sio.emit('init_room_from_server', pickle.dumps(cursesman_server.room))
 
-    print('connect ', sid)
-    if len(cursesman_server.room) != 0:
-        await sio.emit('room_server_refresh', pickle.dumps(cursesman_server.room))
+    else:
+        if len(cursesman_server.room) != 0:
+            await sio.emit('init_room_from_server', pickle.dumps(cursesman_server.room))
 
 @sio.event
 async def disconnect(sid, *args, **kwargs):
     global sids
-    global master_sid
     sids = [s for s in sids if s != sid]
     print('disconnect ', sid)
     if len(sids) == 0:
         cursesman_server.room = []
         return
-    if not master_sid in sids:
-        master_sid = sids[0]
-        await sio.emit('set_master', '', room=master_sid)
-
-
 
 
 app.listen(SERVER_PORT)
