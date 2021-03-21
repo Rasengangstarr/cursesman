@@ -223,6 +223,42 @@ def handle_exploded_bombs(room, players):
         b.die()
     return room
 
+def handle_powerups(room):
+    powerups = [e for e in room if isinstance(e, Powerup)]
+    players = [e for e in room if isinstance(e, Player)]
+    for p in powerups:
+        for pl in players:
+            if is_inside(p, pl):
+                pl.apply_powerup(p.name)
+                if not p.applied:
+                    pl.score += p.score_value
+                    p.applied = True
+                    p.die()
+    return room
+
+def handle_enemies(room):
+    enemies = [e for e in room if isinstance(e, Enemy)]
+    players = [e for e in room if isinstance(e, Player)]
+    for ene in enemies:
+        for pl in players:
+            if is_adjacent(ene, pl, dist=0.5):
+                pl.die()
+
+def handle_doors(room, currentRoom, room_start):
+    # deal with doors
+    display_room = False
+    players = [e for e in room if isinstance(e, Player)]
+    player = players[0]
+    doors = [d for d in room if type(d) == Door]
+    for d in doors:
+        if is_inside(player, d):
+            room_start = time.time()
+            currentRoom += 1
+            room = init_room(player, rooms[currentRoom])   
+            display_room = True
+    return currentRoom, display_room, room_start, room
+
+
 def event_loop(stdscr):
     # Clear screen
     debug_mode = len(sys.argv) > 1 and sys.argv[1] == '--debug'
@@ -231,7 +267,6 @@ def event_loop(stdscr):
     master = False
     player = Player(FIDELITY, FIDELITY, col=1)
     local_player_id = player.uuid
-    room = init_room(player, rooms[currentRoom])
         
     lastDrawTime = time.time()
     room_time = 200
@@ -240,6 +275,10 @@ def event_loop(stdscr):
 
     state = start_screen(stdscr)
     multiplayer = state == 'M'
+
+    if not multiplayer:
+        room = init_room(player, rooms[currentRoom])
+
     # init socket io client if multiplayer
     if multiplayer:
         sio = socketio.Client()
@@ -276,6 +315,11 @@ def event_loop(stdscr):
             nonlocal master
             master = True
 
+        @sio.event
+        def init_room_from_server(data):
+            nonlocal room
+            room = pickle.loads(data)
+
     music_thread = loop_sound('chipchoon1.mp3', 35)
 
     if debug_mode:
@@ -291,7 +335,7 @@ def event_loop(stdscr):
             stdscr.addstr(2, 10, str(player.y))
         time_remaining = room_time - (time.time() - room_start)
         if display_room:
-            generic_screen(stdscr, f'     ROOM      {currentRoom}')
+            generic_screen(stdscr, f'     ROOM      {currentRoom+1}')
             display_room = False
         
         render_stats(player, stdscr, time_remaining)
@@ -306,31 +350,13 @@ def event_loop(stdscr):
         
         if not multiplayer:
             handle_exploded_bombs(room, players)
+            handle_powerups(room)
+            handle_enemies(room)
+            currentRoom, display_room, room_start, room = handle_doors(room, currentRoom, room_start)
+            # kill stuff 
+            room = [e for e in room if e.alive]
 
-
-        for p in powerups:
-            for pl in players:
-                if is_inside(p, pl):
-                    pl.apply_powerup(p.name)
-                    pl.score += p.score_value
-                    p.die()
-
-        for ene in enemies:
-            for pl in players:
-                if is_adjacent(ene, pl, dist=0.5):
-                    pl.die()
-
-        # deal with doors
-        doors = [d for d in room if type(d) == Door]
-        for d in doors:
-            if is_inside(player, d):
-                room_start = time.time()
-                currentRoom += 1
-                room = init_room(player,rooms[currentRoom])   
-                display_room = True
-        
-        room = [e for e in room if e.alive]
-
+        # kill local player
         if player.lives <= 0:
             #music_thread.kill() 
             if multiplayer:

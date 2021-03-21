@@ -413,6 +413,7 @@ class Powerup(Entity):
     def __init__(self, name, x, y, col=0):
         super().__init__(name, x, y, col=col)
         self.flamepass = True
+        self.applied = False
         self.score_value = 1000
 
 
