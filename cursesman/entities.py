@@ -364,6 +364,29 @@ class Player(Character, Destructable):
             # game over
             pass
 
+    def get_hashed_attributes(self):
+        # this is all the stuff like powerup atts, lives, score that may need to be reflected from the server
+        return {
+            'score': self.score,
+            'lives': self.lives,
+            'max_bombs': self.max_bombs,
+            'bomb_power': self.bomb_power,
+            'wallpass': self.wallpass,
+            'bombpass': self.bombpass,
+            'flamepass': self.flamepass,
+        }
+
+    def apply_attributes(self, attributes):
+        self.score = attributes.get('score')
+        self.max_bombs = attributes.get('max_bombs')
+        self.bomb_power = attributes.get('bomb_power')
+        self.wallpass = attributes.get('wallpass')
+        self.bombpass = attributes.get('bombpass')
+        self.flamepass = attributes.get('flamepass')
+
+        if attributes.get('lives') < self.lives:
+            self.die()
+
 class Bomb(Entity, Unwalkable, Explosive, Destructable): # Unwalkable
     def __init__(self, x, y, col=0, power=1, owner=None):
         super().__init__('bomb', x, y, col=col)

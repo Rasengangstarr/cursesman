@@ -8,6 +8,7 @@ import socketio
 import tornado
 import pickle
 import uuid
+import time
 
 SERVER_UUID = str(uuid.uuid4())
 
@@ -15,6 +16,7 @@ class CursesmanServer():
     def __init__(self):
         self.room = []
         self.current_room = 0
+        self.last_act_time = time.time()
 
     def init_room(self):
         self.room = init_room([], rooms[self.current_room])
@@ -22,6 +24,7 @@ class CursesmanServer():
     def destroy_game(self):
         self.room = []
         self.current_room = 0
+        self.last_act_time = time.time()
 
     def update_room(self, update):
         if self.room == []:
@@ -46,7 +49,7 @@ class CursesmanServer():
             # now deal with interactions
             handle_exploded_bombs(self.room, players)
             handle_powerups(self.room)
-            handle_enemies(self.room)
+            self.last_act_time = handle_enemies(self.room, self.last_act_time)
             self.current_room, _, _, self.room = handle_doors(self.room, self.current_room, None)
             # remove dead stuff
             self.room = [e for e in self.room if e.alive]

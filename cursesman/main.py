@@ -71,24 +71,6 @@ def generic_screen(stdscr, text, t=2):
         if time.time() - start > t:
             return
 
-#obselete
-def roll_powerup(x, y):
-    rnd = random.random()
-    if rnd < 0.93:
-        return None
-    elif rnd < 0.95:
-        return Powerup('powerup_bombs', x, y)
-    elif rnd < 0.97:
-        return Powerup('powerup_flames', x, y)
-    elif rnd < 0.985:
-        return Powerup('powerup_speed', x, y)
-    elif rnd < 0.99:
-        return Powerup('powerup_bombpass', x, y)
-    elif rnd < 0.995:
-        return Powerup('powerup_wallpass', x, y)
-    elif rnd < 1:
-        return Powerup('powerup_flamepass', x, y)
-
 def add_static_walls(w,h):
     walls = []
     #borders
@@ -236,13 +218,19 @@ def handle_powerups(room):
                     p.die()
     return room
 
-def handle_enemies(room):
+def handle_enemies(room, lastActTime):
+    currentTime = time.time()
     enemies = [e for e in room if isinstance(e, Enemy)]
     players = [e for e in room if isinstance(e, Player)]
     for ene in enemies:
         for pl in players:
             if is_adjacent(ene, pl, dist=0.5):
                 pl.die()
+    if currentTime >= lastActTime + 0.01:
+        lastActTime = currentTime
+        for enemy in [e for e in room if isinstance(e, Enemy)]:
+            enemy.act(room)
+    return lastActTime
 
 def handle_doors(room, currentRoom, room_start):
     # deal with doors
@@ -274,6 +262,7 @@ def event_loop(stdscr):
 
     state = start_screen(stdscr)
     multiplayer = state == 'M'
+    lastActTime = time.time()
 
     if not multiplayer:
         room = init_room([player], rooms[currentRoom])
@@ -288,10 +277,6 @@ def event_loop(stdscr):
 
         @sio.event
         def room_server_refresh(data):
-            # TODO: probably need to rewrite this
-            # only the player should be handled by the client
-            # deaths and stuff will occur on the server so need to be reflected
-            # other than this the player shouldnt change
             nonlocal room # ew ew ew lets make it a class?
             updated_room = pickle.loads(data)
             # get the player on both local and remote rooms
@@ -300,19 +285,12 @@ def event_loop(stdscr):
                 remote_player = [e for e in updated_room if e.uuid == local_player_id][0]
             except IndexError as e:
                 remote_player = local_player
-            # filter anything owned by the player
-            cond = lambda x: x.owner != local_player_id
-            local = [e for e in room if not cond(e)]
-            updated_room = [e for e in updated_room if cond(e)]
-            # for any objects that are duplicated we should take the updated version
-            updated_uuids = {e.uuid for e in updated_room}
-            local = [e for e in local if e.uuid not in updated_uuids]
-            # handle player death
-            if local_player.lives == remote_player.lives + 1:
-                # player has died
-                player.die()
+            updated_room = [e for e in updated_room if e.uuid != local_player_id]
+            # handle player changes
+            if local_player.get_hashed_attributes() != remote_player.get_hashed_attributes():
+                local_player.apply_attributes(remote_player.get_hashed_attributes())
+            updated_room += [local_player]
             # apply
-            updated_room += local
             room = updated_room
 
         @sio.event
@@ -353,7 +331,7 @@ def event_loop(stdscr):
         if not multiplayer:
             handle_exploded_bombs(room, players)
             handle_powerups(room)
-            handle_enemies(room)
+            lastActTime = handle_enemies(room, lastActTime)
             currentRoom, display_room, room_start, room = handle_doors(room, currentRoom, room_start)
             # kill stuff 
             room = [e for e in room if e.alive]
@@ -382,8 +360,6 @@ def event_loop(stdscr):
                 else:
                     col_override = 2 if entity.owner is not None and entity.owner != local_player_id else None
                     entity.render(stdscr, player.x, player.y, col_override=col_override)
-            for enemy in [e for e in room if isinstance(e, Enemy)]:
-                enemy.act(room)
             stdscr.refresh()
             
             if multiplayer and render_iter % 10 == 0:
