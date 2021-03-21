@@ -236,14 +236,14 @@ def handle_doors(room, currentRoom, room_start):
     # deal with doors
     display_room = False
     players = [e for e in room if isinstance(e, Player)]
-    player = players[0]
     doors = [d for d in room if type(d) == Door]
     for d in doors:
-        if is_inside(player, d):
-            room_start = time.time()
-            currentRoom += 1
-            room = init_room(players, rooms[currentRoom])   
-            display_room = True
+        for player in players:
+            if is_inside(player, d):
+                room_start = time.time()
+                currentRoom += 1
+                room = init_room(players, rooms[currentRoom])   
+                display_room = True
     return currentRoom, display_room, room_start, room
 
 
@@ -280,7 +280,7 @@ def event_loop(stdscr):
             nonlocal room # ew ew ew lets make it a class?
             updated_room = pickle.loads(data)
             # get the player on both local and remote rooms
-            local_player = [e for e in room if e.uuid == local_player_id][0]
+            local_player = player
             try:
                 remote_player = [e for e in updated_room if e.uuid == local_player_id][0]
             except IndexError as e:
@@ -296,8 +296,8 @@ def event_loop(stdscr):
         @sio.event
         def init_room_from_server(data):
             nonlocal room
-            room = pickle.loads(data)
-            room += [player]
+            unpacked = pickle.loads(data)
+            room = unpacked + [player]
 
 
     music_thread = loop_sound('chipchoon1.mp3', 35)
@@ -366,6 +366,9 @@ def event_loop(stdscr):
                 cond = lambda x: x.owner == local_player_id
                 dumps = pickle.dumps([e for e in room if cond(e)])
                 sio.emit('room_event', dumps)
+                # remove bombs from local
+                #for b in [e for e in room if isinstance(e, Bomb) and e.owner == local_player_id]:
+                    #b.owner = None
 
         
 
