@@ -71,24 +71,6 @@ def generic_screen(stdscr, text, t=2):
         if time.time() - start > t:
             return
 
-#obselete
-def roll_powerup(x, y):
-    rnd = random.random()
-    if rnd < 0.93:
-        return None
-    elif rnd < 0.95:
-        return Powerup('powerup_bombs', x, y)
-    elif rnd < 0.97:
-        return Powerup('powerup_flames', x, y)
-    elif rnd < 0.985:
-        return Powerup('powerup_speed', x, y)
-    elif rnd < 0.99:
-        return Powerup('powerup_bombpass', x, y)
-    elif rnd < 0.995:
-        return Powerup('powerup_wallpass', x, y)
-    elif rnd < 1:
-        return Powerup('powerup_flamepass', x, y)
-
 def add_static_walls(w,h):
     walls = []
     #borders
@@ -151,11 +133,12 @@ def is_adjacent(a, b, dist=2):
 def is_inside(a,b):
     return a.x == b.x and a.y == b.y
 
-def init_room(player, room):
-    player.x = FIDELITY
-    player.y = FIDELITY
+def init_room(players, room):
+    for player in players:
+        player.x = FIDELITY
+        player.y = FIDELITY
 
-    return_room = place_room_entities(room[1], room[2], room[4]) + add_static_walls(room[1], room[2]) + [player]
+    return_room = place_room_entities(room[1], room[2], room[4]) + add_static_walls(room[1], room[2]) + players
 
     #enemies
     for e in room[3]:
@@ -187,7 +170,6 @@ def handle_exploded_bombs(room, players):
     indestructableEntities = [e for e in room if not isinstance(e, Destructable) and not e.flamepass]
     
     for b in explodedBombs:
-        logging.warning("roo")
        
         #for each directional group of explosions
         for g in range(0, 4):
@@ -223,15 +205,55 @@ def handle_exploded_bombs(room, players):
         b.die()
     return room
 
+def handle_powerups(room):
+    powerups = [e for e in room if isinstance(e, Powerup)]
+    players = [e for e in room if isinstance(e, Player)]
+    for p in powerups:
+        for pl in players:
+            if is_inside(p, pl):
+                pl.apply_powerup(p.name)
+                if not p.applied:
+                    pl.score += p.score_value
+                    p.applied = True
+                    p.die()
+    return room
+
+def handle_enemies(room, lastActTime):
+    currentTime = time.time()
+    enemies = [e for e in room if isinstance(e, Enemy)]
+    players = [e for e in room if isinstance(e, Player)]
+    for ene in enemies:
+        for pl in players:
+            if is_adjacent(ene, pl, dist=0.5):
+                pl.die()
+    if currentTime >= lastActTime + 0.01:
+        lastActTime = currentTime
+        for enemy in [e for e in room if isinstance(e, Enemy)]:
+            enemy.act(room)
+    return lastActTime
+
+def handle_doors(room, currentRoom, room_start):
+    # deal with doors
+    display_room = False
+    players = [e for e in room if isinstance(e, Player)]
+    doors = [d for d in room if type(d) == Door]
+    for d in doors:
+        for player in players:
+            if is_inside(player, d):
+                room_start = time.time()
+                currentRoom += 1
+                room = init_room(players, rooms[currentRoom])   
+                display_room = True
+    return currentRoom, display_room, room_start, room
+
+
 def event_loop(stdscr):
     # Clear screen
     debug_mode = len(sys.argv) > 1 and sys.argv[1] == '--debug'
     currentRoom = 0
     display_room = True
-    master = False
     player = Player(FIDELITY, FIDELITY, col=1)
     local_player_id = player.uuid
-    room = init_room(player, rooms[currentRoom])
         
     lastDrawTime = time.time()
     room_time = 200
@@ -240,6 +262,13 @@ def event_loop(stdscr):
 
     state = start_screen(stdscr)
     multiplayer = state == 'M'
+    lastActTime = time.time()
+
+    if not multiplayer:
+        room = init_room([player], rooms[currentRoom])
+    else:
+        room = []
+
     # init socket io client if multiplayer
     if multiplayer:
         sio = socketio.Client()
@@ -251,30 +280,25 @@ def event_loop(stdscr):
             nonlocal room # ew ew ew lets make it a class?
             updated_room = pickle.loads(data)
             # get the player on both local and remote rooms
-            local_player = [e for e in room if e.uuid == local_player_id][0]
+            local_player = player
             try:
                 remote_player = [e for e in updated_room if e.uuid == local_player_id][0]
             except IndexError as e:
                 remote_player = local_player
-            # filter anything owned by the player
-            cond = lambda x: x.owner != local_player_id
-            local = [e for e in room if not cond(e)]
-            updated_room = [e for e in updated_room if cond(e)]
-            # for any objects that are duplicated we should take the updated version
-            updated_uuids = {e.uuid for e in updated_room}
-            local = [e for e in local if e.uuid not in updated_uuids]
-            # handle player death
-            if local_player.lives == remote_player.lives + 1:
-                # player has died
-                player.die()
+            updated_room = [e for e in updated_room if e.uuid != local_player_id]
+            # handle player changes
+            if local_player.get_hashed_attributes() != remote_player.get_hashed_attributes():
+                local_player.apply_attributes(remote_player.get_hashed_attributes())
+            updated_room += [local_player]
             # apply
-            updated_room += local
             room = updated_room
 
         @sio.event
-        def set_master(data):
-            nonlocal master
-            master = True
+        def init_room_from_server(data):
+            nonlocal room
+            unpacked = pickle.loads(data)
+            room = unpacked + [player]
+
 
     music_thread = loop_sound('chipchoon1.mp3', 35)
 
@@ -291,7 +315,7 @@ def event_loop(stdscr):
             stdscr.addstr(2, 10, str(player.y))
         time_remaining = room_time - (time.time() - room_start)
         if display_room:
-            generic_screen(stdscr, f'     ROOM      {currentRoom}')
+            generic_screen(stdscr, f'     ROOM      {currentRoom+1}')
             display_room = False
         
         render_stats(player, stdscr, time_remaining)
@@ -306,31 +330,13 @@ def event_loop(stdscr):
         
         if not multiplayer:
             handle_exploded_bombs(room, players)
+            handle_powerups(room)
+            lastActTime = handle_enemies(room, lastActTime)
+            currentRoom, display_room, room_start, room = handle_doors(room, currentRoom, room_start)
+            # kill stuff 
+            room = [e for e in room if e.alive]
 
-
-        for p in powerups:
-            for pl in players:
-                if is_inside(p, pl):
-                    pl.apply_powerup(p.name)
-                    pl.score += p.score_value
-                    p.die()
-
-        for ene in enemies:
-            for pl in players:
-                if is_adjacent(ene, pl, dist=0.5):
-                    pl.die()
-
-        # deal with doors
-        doors = [d for d in room if type(d) == Door]
-        for d in doors:
-            if is_inside(player, d):
-                room_start = time.time()
-                currentRoom += 1
-                room = init_room(player,rooms[currentRoom])   
-                display_room = True
-        
-        room = [e for e in room if e.alive]
-
+        # kill local player
         if player.lives <= 0:
             #music_thread.kill() 
             if multiplayer:
@@ -354,17 +360,15 @@ def event_loop(stdscr):
                 else:
                     col_override = 2 if entity.owner is not None and entity.owner != local_player_id else None
                     entity.render(stdscr, player.x, player.y, col_override=col_override)
-            for enemy in [e for e in room if isinstance(e, Enemy)]:
-                enemy.act(room)
             stdscr.refresh()
             
             if multiplayer and render_iter % 10 == 0:
-                if master:
-                    cond = lambda x: x.owner is None or x.owner == local_player_id
-                else:
-                    cond = lambda x: x.owner == local_player_id
+                cond = lambda x: x.owner == local_player_id
                 dumps = pickle.dumps([e for e in room if cond(e)])
                 sio.emit('room_event', dumps)
+                # remove bombs from local
+                #for b in [e for e in room if isinstance(e, Bomb) and e.owner == local_player_id]:
+                    #b.owner = None
 
         
 
