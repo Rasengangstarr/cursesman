@@ -349,7 +349,7 @@ class Player(Character, Destructable):
         self.lives = 3
         self.score = 0
         self.owner = self.uuid
-
+        self.detonator = False
     def central_render(self, stdscr, px, py):
         #always draw the player at the same location
         self.sprite.render(stdscr, playerXDraw, playerYDraw, col=self.col)
@@ -374,6 +374,7 @@ class Player(Character, Destructable):
             'wallpass': self.wallpass,
             'bombpass': self.bombpass,
             'flamepass': self.flamepass,
+            'detonator': self.detonator
         }
 
     def apply_attributes(self, attributes):
@@ -383,7 +384,7 @@ class Player(Character, Destructable):
         self.wallpass = attributes.get('wallpass')
         self.bombpass = attributes.get('bombpass')
         self.flamepass = attributes.get('flamepass')
-
+        self.detonator = attributes.get('detonator')
         if attributes.get('lives') < self.lives:
             self.die()
 
