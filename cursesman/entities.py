@@ -107,7 +107,7 @@ class Character(Entity):
         super().__init__(name, x, y, col=col)
         self.speed = 1
         # maybe not all characters will have the ability to drop bombs
-        self.max_bombs = 3
+        self.max_bombs = 1
         self.bomb_power = 1
         self.wallpass = False
         self.bombpass = False
