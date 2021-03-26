@@ -307,7 +307,6 @@ def event_loop(stdscr):
         player.bomb_power=5
         player.flamepass = True
         player.wallpass = True
-
     render_iter = 0 
     while not game_over:
         if debug_mode:
@@ -387,6 +386,10 @@ def event_loop(stdscr):
         elif inp in [ord(' '), ord('e')]:
             if nplayerbombs < player.max_bombs:
                 room.append(Bomb(player.x, player.y, col=player.col, power=player.bomb_power, owner=local_player_id))
+        elif inp in [ord('f'), ord('m')]:
+            if nplayerbombs > 0 and player.detonator:
+                bombs = [r for r in room if isinstance(r,Bomb)]
+                bombs[0].explode()
 
 
         player.tick()
